@@ -1,0 +1,77 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1200" y2="900">
+      <stop offset="0%" stop-color="#021814"/>
+      <stop offset="100%" stop-color="#001a10"/>
+    </linearGradient>
+    <linearGradient id="carGradient" x1="0" y1="0" x2="800" y2="400">
+      <stop offset="0%" stop-color="#003d30"/>
+      <stop offset="30%" stop-color="#005a44"/>
+      <stop offset="50%" stop-color="#00d4aa"/>
+      <stop offset="70%" stop-color="#005a44"/>
+      <stop offset="100%" stop-color="#003d30"/>
+    </linearGradient>
+    <linearGradient id="rimGradient" x1="0" y1="0" x2="0" y2="120">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="50%" stop-color="#2a2a2a"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <radialGradient id="highlight" cx="50%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#00d4aa" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#00d4aa" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#003d30" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bgGradient)"/>
+  <!-- Ground reflection -->
+  <ellipse cx="600" cy="720" rx="400" ry="40" fill="#00d4aa" opacity="0.05" filter="url(#glow)"/>
+  <!-- Car body - perfect ceramic -->
+  <path d="M300 450 L350 380 L550 380 L600 420 L750 420 L800 480 L800 600 L300 600 Z" fill="url(#carGradient)" filter="url(#glow)"/>
+  <!-- Highlight reflection -->
+  <path d="M350 380 L550 380 L600 420 L750 420 L750 400 L550 360 L350 360 Z" fill="url(#highlight)" opacity="0.6"/>
+  <!-- Side reflection -->
+  <path d="M400 420 L700 420 L700 520 L400 520 Z" fill="url(#highlight)" opacity="0.3"/>
+  <!-- Windows -->
+  <path d="M380 380 L520 380 L570 420 L380 420 Z" fill="#001a10" opacity="0.6"/>
+  <path d="M580 380 L720 380 L720 420 L580 420 Z" fill="#001a10" opacity="0.6"/>
+  <!-- Wheels -->
+  <ellipse cx="400" cy="600" rx="60" ry="30" fill="#0a0a0a" stroke="#1a1a1a" stroke-width="2"/>
+  <ellipse cx="400" cy="600" rx="45" ry="22" fill="url(#rimGradient)"/>
+  <ellipse cx="700" cy="600" rx="60" ry="30" fill="#0a0a0a" stroke="#1a1a1a" stroke-width="2"/>
+  <ellipse cx="700" cy="600" rx="45" ry="22" fill="url(#rimGradient)"/>
+  <!-- Brake calipers -->
+  <rect x="385" y="585" width="30" height="10" rx="2" fill="#00d4aa" opacity="0.8"/>
+  <rect x="685" y="585" width="30" height="10" rx="2" fill="#00d4aa" opacity="0.8"/>
+  <!-- Headlights -->
+  <ellipse cx="790" cy="460" rx="25" ry="12" fill="#ffffee" opacity="0.9" filter="url(#glow)"/>
+  <ellipse cx="790" cy="500" rx="25" ry="12" fill="#ffffee" opacity="0.9" filter="url(#glow)"/>
+  <!-- Taillights -->
+  <ellipse cx="310" cy="460" rx="15" ry="20" fill="#ff3333" opacity="0.6"/>
+  <ellipse cx="310" cy="500" rx="15" ry="20" fill="#ff3333" opacity="0.6"/>
+  <!-- Ceramic water beads -->
+  <circle cx="420" cy="440" r="6" fill="none" stroke="#00d4aa" stroke-width="1.5" opacity="0.8"/>
+  <circle cx="425" cy="442" r="3" fill="#00d4aa" opacity="0.6"/>
+  <circle cx="550" cy="450" r="8" fill="none" stroke="#00d4aa" stroke-width="1.5" opacity="0.7"/>
+  <circle cx="555" cy="452" r="4" fill="#00d4aa" opacity="0.5"/>
+  <circle cx="650" cy="430" r="5" fill="none" stroke="#00d4aa" stroke-width="1.5" opacity="0.9"/>
+  <circle cx="652" cy="432" r="2.5" fill="#00d4aa" opacity="0.7"/>
+  <circle cx="500" cy="500" r="10" fill="none" stroke="#00d4aa" stroke-width="2" opacity="0.6"/>
+  <circle cx="505" cy="503" r="5" fill="#00d4aa" opacity="0.4"/>
+  <!-- Sparkle particles -->
+  <circle cx="380" cy="370" r="2" fill="#00d4aa" opacity="0.9"/>
+  <circle cx="580" cy="360" r="1.5" fill="#00d4aa" opacity="0.8"/>
+  <circle cx="720" cy="390" r="2" fill="#00d4aa" opacity="0.7"/>
+  <circle cx="450" cy="580" r="1.5" fill="#00d4aa" opacity="0.6"/>
+  <circle cx="680" cy="590" r="2" fill="#00d4aa" opacity="0.5"/>
+  <!-- Labels -->
+  <text x="600" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="300" fill="#00D4AA" letter-spacing="0.1em">AFTER</text>
+  <text x="600" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#008a6a" letter-spacing="0.05em">Ceramic Coated • Hydrophobic • Mirror Finish</text>
+  <text x="600" y="750" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#005a44">5-Year Protection • Zero Maintenance</text>
+</svg>

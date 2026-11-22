@@ -1,0 +1,24 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="#1a1612"/>
+  <rect x="200" y="250" width="800" height="400" rx="20" fill="#0d0a08" stroke="#3d332a" stroke-width="2"/>
+  <!-- Car silhouette - dirty/neglected -->
+  <path d="M300 450 L350 380 L550 380 L600 420 L750 420 L800 480 L800 600 L300 600 Z" fill="#2a241e" stroke="#4a3d2e" stroke-width="3"/>
+  <ellipse cx="400" cy="600" rx="60" ry="30" fill="#1a1612" stroke="#3d332a" stroke-width="2"/>
+  <ellipse cx="700" cy="600" rx="60" ry="30" fill="#1a1612" stroke="#3d332a" stroke-width="2"/>
+  <!-- Dirt particles -->
+  <circle cx="380" cy="420" r="3" fill="#5a4a3a" opacity="0.6"/>
+  <circle cx="520" cy="400" r="2" fill="#5a4a3a" opacity="0.5"/>
+  <circle cx="650" cy="430" r="4" fill="#5a4a3a" opacity="0.7"/>
+  <circle cx="450" cy="500" r="2" fill="#5a4a3a" opacity="0.4"/>
+  <circle cx="600" cy="520" r="3" fill="#5a4a3a" opacity="0.6"/>
+  <!-- Water spots -->
+  <circle cx="480" cy="450" r="8" fill="none" stroke="#3d332a" stroke-width="1" opacity="0.3"/>
+  <circle cx="580" cy="480" r="12" fill="none" stroke="#3d332a" stroke-width="1" opacity="0.2"/>
+  <!-- Oxidation patches -->
+  <ellipse cx="400" cy="480" rx="30" ry="15" fill="#3a2e1e" opacity="0.4"/>
+  <ellipse cx="650" cy="460" rx="25" ry="12" fill="#3a2e1e" opacity="0.3"/>
+  <!-- Labels -->
+  <text x="600" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="48" font-weight="300" fill="#8B7355" letter-spacing="0.1em">BEFORE</text>
+  <text x="600" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#5a4a3a" letter-spacing="0.05em">Neglected • Oxidized • Contaminated</text>
+  <text x="600" y="750" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4a3d2e">Swipe to see transformation →</text>
+</svg>

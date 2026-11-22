@@ -2,26 +2,188 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
+  }
+
+  * {
+    @apply border-white/10;
+  }
+
+  html {
+    @apply scroll-smooth;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-family: var(--font-inter), system-ui, sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  ::selection {
+    @apply bg-emerald-400/30 text-white;
+  }
+
+  ::-webkit-scrollbar {
+    @apply w-1.5;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-black;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-emerald-400/50 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-emerald-400;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .container-custom {
+    @apply max-w-7xl mx-auto px-6;
+  }
+
+  .section-header {
+    @apply text-center mb-16 md:mb-24;
+  }
+
+  .section-tag {
+    @apply inline-block px-4 py-1.5 bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-xs tracking-widest uppercase rounded-full mb-6;
+  }
+
+  .section-title {
+    @apply text-4xl md:text-6xl font-light text-white tracking-tight leading-tight mb-6;
+  }
+
+  .section-title-accent {
+    @apply text-emerald-400;
+  }
+
+  .section-description {
+    @apply text-white/50 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed;
+  }
+
+  .btn-primary {
+    @apply px-8 py-3.5 bg-emerald-400 text-black font-medium tracking-wide rounded-full hover:bg-emerald-300 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-400/25;
+  }
+
+  .btn-secondary {
+    @apply px-8 py-3.5 bg-white/5 text-white border border-white/10 font-medium tracking-wide rounded-full hover:bg-white/10 hover:border-emerald-400/50 transition-all duration-300;
+  }
+
+  .card-base {
+    @apply bg-white/3 border border-white/10 rounded-2xl transition-all duration-500 hover:border-emerald-400/50 hover:bg-white/5;
+  }
+
+  .input-base {
+    @apply w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all hover:border-white/20;
+  }
+
+  .input-error {
+    @apply border-emerald-400 focus:ring-emerald-400/50;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out forwards;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.3s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text text-transparent;
+  }
+
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, #00D4AA, #0066FF, #00D4AA);
+    background-size: 200% 200%;
+    z-index: -1;
+    animation: gradientShift 3s ease infinite;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .gradient-border:hover::before {
+    opacity: 1;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}
+
+/* Focus visible for accessibility */
+:focus-visible {
+  @apply outline-none ring-2 ring-emerald-400 ring-offset-2 ring-offset-black;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
   }
 }

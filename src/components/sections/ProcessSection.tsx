@@ -1,0 +1,275 @@
+'use client';
+
+import { useState } from 'react';
+import { STAGES } from '@/components/three/DetailingScene';
+
+const PROCESS_STEPS = [
+  {
+    number: '01',
+    title: 'Decontamination',
+    description: 'Iron fallout removal, clay bar treatment, and tar/adhesive removal. This prepares the clear coat for correction by eliminating bonded contaminants that cause marring.',
+    details: ['Iron X fallout remover', 'Fine-grade clay bar', 'Tar & adhesive remover', 'Final rinse & inspection'],
+    duration: '60-90 min',
+    icon: 'droplets',
+  },
+  {
+    number: '02',
+    title: 'Paint Correction',
+    description: 'Multi-stage machine polishing using Rupes/ Flex systems. We remove swirls, scratches, oxidation, and holograms. Each stage refines the finish to higher clarity.',
+    details: ['Compound cut (heavy defects)', 'Polish refine (clarity)', 'Jeweling finish (depth)', 'IPA panel wipe'],
+    duration: '3-6 hours',
+    icon: 'rotate-cw',
+  },
+  {
+    number: '03',
+    title: 'Ceramic Coating',
+    description: 'Professional-grade SiO2 ceramic coating applied panel-by-panel in controlled environment. Creates hydrophobic, UV-resistant, chemical-resistant barrier.',
+    details: ['Surface prep & inspection', 'Base layer application', 'Top coat (if applicable)', 'Cure time: 12-24 hours'],
+    duration: '2-4 hours',
+    icon: 'shield',
+  },
+  {
+    number: '04',
+    title: 'Final Details',
+    description: 'Every surface perfected. Wheels coated, glass treated, trim restored, interior detailed. Vehicle delivered showroom-ready with care guide.',
+    details: ['Wheel faces & barrels coated', 'Glass ceramic coating', 'Trim restoration', 'Interior deep clean', 'Final QC & walkthrough'],
+    duration: '2-3 hours',
+    icon: 'sparkles',
+  },
+];
+
+const ICONS = {
+  droplets: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+    </svg>
+  ),
+  'rotate-cw': (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M23 4v6h-6" />
+      <path d="M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    </svg>
+  ),
+  shield: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  sparkles: (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93l-14.14 14.14" />
+    </svg>
+  ),
+};
+
+export const ProcessSection = () => {
+  const [activeStep, setActiveStep] = useState(0);
+
+  return (
+    <section id="process" className="relative py-24 md:py-32 px-6 bg-black">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="text-center mb-16 md:mb-24">
+          <span className="inline-block px-4 py-1.5 bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-xs tracking-widest uppercase rounded-full mb-6">
+            Our Process
+          </span>
+          <h2 className="text-4xl md:text-6xl font-light text-white tracking-tight leading-tight mb-6">
+            Precision at<br />
+            <span className="text-emerald-400">Every Stage</span>
+          </h2>
+          <p className="text-white/50 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
+            Four phases. Zero shortcuts. Every vehicle receives the same obsessive attention
+            whether it's a daily driver or a concours competitor.
+          </p>
+        </div>
+
+        {/* Process Timeline */}
+        <div className="relative">
+          {/* Vertical line */}
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-400/50 via-emerald-400/20 to-transparent -translate-x-1/2" />
+
+          <div className="space-y-12 md:space-y-16">
+            {PROCESS_STEPS.map((step, index) => (
+              <ProcessStep
+                key={step.number}
+                step={step}
+                index={index}
+                isActive={activeStep === index}
+                onClick={() => setActiveStep(index)}
+                totalSteps={PROCESS_STEPS.length}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile Step Indicator */}
+        <div className="lg:hidden mt-12 flex items-center justify-center gap-2">
+          {PROCESS_STEPS.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveStep(index)}
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
+                index === activeStep
+                  ? 'bg-emerald-400 w-8'
+                  : 'bg-white/20 hover:bg-white/40'
+              }`}
+              aria-label={`Step ${index + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+interface ProcessStepProps {
+  step: (typeof PROCESS_STEPS)[0];
+  index: number;
+  isActive: boolean;
+  onClick: () => void;
+  totalSteps: number;
+}
+
+const ProcessStep = ({ step, index, isActive, onClick, totalSteps }: ProcessStepProps) => {
+  const isEven = index % 2 === 0;
+
+  return (
+    <article
+      className={`relative group cursor-pointer transition-all duration-500 ${
+        isActive ? 'scale-[1.02]' : ''
+      }`}
+      onClick={onClick}
+    >
+      <div className={`flex lg:flex-row ${isEven ? 'lg:flex-row-reverse' : ''} items-start gap-8 md:gap-12`}>
+        {/* Content */}
+        <div className={`flex-1 lg:w-1/2 relative z-10 ${isEven ? 'lg:pl-12' : 'lg:pr-12'} text-center lg:text-left`}>
+          {/* Step Number */}
+          <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
+            <span
+              className={`text-4xl md:text-5xl font-light tracking-tight transition-colors ${
+                isActive ? 'text-emerald-400' : 'text-white/30'
+              }`}
+            >
+              {step.number}
+            </span>
+            <div className="w-16 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+          </div>
+
+          {/* Icon */}
+          <div
+            className={`inline-flex items-center justify-center w-16 h-16 rounded-xl mb-6 transition-all duration-500 ${
+              isActive
+                ? 'bg-emerald-400/20 text-emerald-400 scale-110'
+                : 'bg-white/5 text-white/50'
+            }`}
+          >
+            {ICONS[step.icon as keyof typeof ICONS]}
+          </div>
+
+          {/* Title & Description */}
+          <h3 className={`text-2xl md:text-3xl font-light text-white tracking-tight mb-4 ${isActive ? 'text-emerald-400' : ''}`}>
+            {step.title}
+          </h3>
+          <p className="text-white/50 text-base md:text-lg leading-relaxed mb-6">{step.description}</p>
+
+          {/* Details */}
+          <div className="grid sm:grid-cols-2 gap-3 mb-6">
+            {step.details.map((detail, i) => (
+              <div
+                key={i}
+                className={`flex items-center gap-2 text-sm text-white/60 transition-colors ${
+                  isActive ? 'text-white/80' : ''
+                }`}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/50" />
+                {detail}
+              </div>
+            ))}
+          </div>
+
+          {/* Duration */}
+          <div className="flex items-center gap-2 text-white/40 text-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            <span>{step.duration}</span>
+          </div>
+        </div>
+
+        {/* Visual Card */}
+        <div className={`flex-1 lg:w-1/2 relative`}>
+          <div
+            className={`relative aspect-[4/3] rounded-2xl overflow-hidden transition-all duration-700 ${
+              isActive
+                ? 'ring-2 ring-emerald-400/50 shadow-[0_0_60px_rgba(0,212,170,0.15)]'
+                : 'opacity-60 hover:opacity-80'
+            }`}
+          >
+            {/* Stage color background */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(135deg, ${STAGES[index]?.bgColor || '#0a0a0a'} 0%, ${STAGES[index]?.color || '#00D4AA'}22 100%)`,
+              }}
+            />
+
+            {/* Decorative elements */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center p-8">
+                {ICONS[step.icon as keyof typeof ICONS] && (
+                  <div className="inline-block mb-4" style={{ transform: 'scale(2.5)' }}>
+                    {ICONS[step.icon as keyof typeof ICONS]}
+                  </div>
+                )}
+                <div className="text-white/10 font-light tracking-widest text-4xl md:text-5xl uppercase">
+                  {step.title}
+                </div>
+              </div>
+            </div>
+
+            {/* Progress ring for active */}
+            {isActive && (
+              <svg className="absolute inset-0 -m-2" viewBox="0 0 100 100">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="url(#progressGradient)"
+                  strokeWidth="2"
+                  strokeDasharray="283"
+                  strokeDashoffset="0"
+                  strokeLinecap="round"
+                  className="animate-progress"
+                  style={{
+                    transform: 'rotate(-90deg)',
+                    transformOrigin: '50% 50%',
+                  }}
+                />
+                <defs>
+                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#00D4AA" />
+                    <stop offset="100%" stopColor="#0066FF" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            )}
+          </div>
+
+          {/* Stage indicator dot on timeline */}
+          <div className="hidden lg:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+            <div
+              className={`w-4 h-4 rounded-full border-4 transition-all duration-500 ${
+                isActive
+                  ? 'bg-emerald-400 border-white shadow-[0_0_20px_rgba(0,212,170,0.8)]'
+                  : 'bg-black border-white/20'
+              }`}
+            />
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+};

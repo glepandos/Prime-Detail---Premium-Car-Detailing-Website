@@ -1,0 +1,12 @@
+# Prime Detail - robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://primedetail.com/sitemap.xml
+
+# Disallow private/admin areas
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Disallow: /*.json$
