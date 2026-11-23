@@ -5,16 +5,13 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
 import {
   Html,
-  OrbitControls,
   Environment,
   AccumulativeShadows,
   ContactShadows,
-  useGLTF,
-  useTexture,
 } from '@react-three/drei';
-import { ShaderMaterial, Vector2, Vector3, Clock } from 'three';
-import { detailingShaders } from '@/lib/shaders/detailingShaders';
-import { DetailingStage, CarModel } from '@/types';
+import { ShaderMaterial, Vector2, Clock } from 'three';
+import { vertexShader, fragmentShader } from '@/lib/shaders/detailingShaders';
+import { DetailingStage } from '@/types';
 
 extend({ ShaderMaterial });
 
@@ -57,11 +54,11 @@ interface DetailingSceneProps {
   currentStage?: number;
 }
 
-const CarModel = ({ stage, currentStage }: { stage: number; currentStage: number }) => {
+const DetailingCarModel = ({ stage }: { stage: number }) => {
   const { scene } = useThree();
   const clock = useMemo(() => new Clock(), []);
   const materialRef = useRef<ShaderMaterial | null>(null);
-  const groupRef = useRef<THREE.Group>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
   const [modelLoaded, setModelLoaded] = useState(false);
 
   // Create procedural car geometry since we don't have actual GLTF models
@@ -86,8 +83,8 @@ const CarModel = ({ stage, currentStage }: { stage: number; currentStage: number
 
     // Create shader material for car body
     const material = new THREE.ShaderMaterial({
-      vertexShader: detailingShaders.vertexShader,
-      fragmentShader: detailingShaders.fragmentShader,
+      vertexShader,
+      fragmentShader,
       uniforms: {
         uTime: { value: 0 },
         uProgress: { value: 0 },
@@ -167,7 +164,7 @@ const CarModel = ({ stage, currentStage }: { stage: number; currentStage: number
     group.add(rearWindow);
 
     // Wheels
-    const wheelPositions = [
+    const wheelPositions: [number, number, number][] = [
       [1.3, 0.4, 0.95],
       [1.3, 0.4, -0.95],
       [-1.3, 0.4, 0.95],
@@ -176,14 +173,14 @@ const CarModel = ({ stage, currentStage }: { stage: number; currentStage: number
 
     wheelPositions.forEach((pos) => {
       const wheel = new THREE.Mesh(wheelGeometry, tireMaterial);
-      wheel.position.set(...pos);
+      wheel.position.set(pos[0], pos[1], pos[2]);
       wheel.rotation.z = Math.PI / 2;
       wheel.castShadow = true;
       wheel.receiveShadow = true;
       group.add(wheel);
 
       const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-      rim.position.set(...pos);
+      rim.position.set(pos[0], pos[1], pos[2]);
       rim.rotation.z = Math.PI / 2;
       rim.castShadow = true;
       group.add(rim);
@@ -291,11 +288,15 @@ const CarModel = ({ stage, currentStage }: { stage: number; currentStage: number
 
 const StageEnvironment = ({ stage }: { stage: number }) => {
   const stageData = STAGES[stage];
+  const { scene } = useThree();
+
+  useEffect(() => {
+    scene.background = new THREE.Color(stageData.bgColor);
+  }, [scene, stageData.bgColor]);
 
   return (
     <>
       <Environment
-        background={stageData.bgColor}
         preset="city"
         files={[
           '/textures/environment/px.png',
@@ -387,7 +388,6 @@ const ParticleSystem = ({ stage }: { stage: number }) => {
   useFrame(() => {
     if (pointsRef.current) {
       const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
-      const velocities = pointsRef.current.geometry.attributes.velocity.array as Float32Array;
       const time = clock.getElapsedTime();
 
       for (let i = 0; i < positions.length; i += 3) {
@@ -417,10 +417,9 @@ const ParticleSystem = ({ stage }: { stage: number }) => {
 
 export const DetailingScene = ({
   onStageChange,
-  scrollProgress = 0,
   currentStage = 0,
 }: DetailingSceneProps) => {
-  const { viewport } = useThree();
+  useThree();
 
   useEffect(() => {
     if (onStageChange) {
@@ -442,7 +441,7 @@ export const DetailingScene = ({
       }}
     >
       <StageEnvironment stage={currentStage} />
-      <CarModel stage={currentStage} currentStage={currentStage} />
+      <DetailingCarModel stage={currentStage} />
       <ParticleSystem stage={currentStage} />
 
       <Html

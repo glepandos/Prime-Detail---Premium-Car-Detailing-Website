@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
@@ -20,7 +20,6 @@ interface HorizontalScrollProps {
 export const HorizontalScroll = ({
   children,
   onStageChange,
-  scrollProgress = 0,
   setScrollProgress,
   currentStage = 0,
   setCurrentStage,
@@ -28,7 +27,6 @@ export const HorizontalScroll = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const lenisRef = useRef<Lenis | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   const scrollTriggersRef = useRef<ScrollTrigger[]>([]);
 
   // Initialize Lenis smooth scroll
@@ -38,10 +36,6 @@ export const HorizontalScroll = ({
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      direction: 'horizontal',
-      gestureDirection: 'horizontal',
-      smooth: true,
-      smoothTouch: false,
       touchMultiplier: 2,
     });
 
@@ -132,12 +126,15 @@ export const HorizontalScroll = ({
       }
     };
 
-    lenisRef.current.on('scroll', syncScroll);
+    const lenis = lenisRef.current;
+    if (lenis) {
+      lenis.on('scroll', syncScroll);
+    }
 
     return () => {
       scrollTriggersRef.current.forEach((trigger) => trigger.kill());
       scrollTriggersRef.current = [];
-      lenisRef.current?.off('scroll', syncScroll);
+      lenis?.off('scroll', syncScroll);
     };
   }, [onStageChange, setScrollProgress, setCurrentStage]);
 
@@ -146,7 +143,6 @@ export const HorizontalScroll = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!lenisRef.current || !containerRef.current) return;
 
-      const container = containerRef.current;
       const scrollContainer = scrollRef.current;
       if (!scrollContainer) return;
 

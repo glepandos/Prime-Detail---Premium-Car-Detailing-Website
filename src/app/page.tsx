@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { Navigation } from '@/components/ui/Navigation';
 import { Footer } from '@/components/ui/Footer';
 import { HorizontalScroll, StageSection } from '@/components/three/HorizontalScroll';
-import { STAGES } from '@/components/three/DetailingScene';
 
 // Dynamic imports for heavy components
 const DetailingScene = dynamic(() => import('@/components/three/DetailingScene').then((mod) => mod.DetailingScene), {
@@ -95,7 +94,7 @@ export default function HomePage() {
 
       {/* Loading Screen */}
       {!isLoaded && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center" style={{ animation: 'fadeOut 0.5s ease-out 1s forwards' }}>
+        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center animate-fade-out">
           <div className="text-center">
             <svg width="80" height="80" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-6 text-emerald-400 animate-spin">
               <defs>
@@ -111,31 +110,8 @@ export default function HomePage() {
             <p className="text-white/50 text-sm tracking-widest uppercase">Prime Detail</p>
             <p className="text-white/30 text-xs mt-2">Loading experience...</p>
           </div>
-          <style jsx>{`
-            @keyframes fadeOut {
-              to { opacity: 0; visibility: hidden; }
-            }
-          `}</style>
         </div>
       )}
-
-      <style jsx global>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-
-        @keyframes progress {
-          from { stroke-dashoffset: 283; }
-          to { stroke-dashoffset: 0; }
-        }
-        .animate-progress {
-          animation: progress 2s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 }

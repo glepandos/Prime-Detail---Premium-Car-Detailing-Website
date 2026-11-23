@@ -80,7 +80,7 @@ export const ProcessSection = () => {
           </h2>
           <p className="text-white/50 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
             Four phases. Zero shortcuts. Every vehicle receives the same obsessive attention
-            whether it's a daily driver or a concours competitor.
+            whether it&apos;s a daily driver or a concours competitor.
           </p>
         </div>
 
@@ -97,7 +97,6 @@ export const ProcessSection = () => {
                 index={index}
                 isActive={activeStep === index}
                 onClick={() => setActiveStep(index)}
-                totalSteps={PROCESS_STEPS.length}
               />
             ))}
           </div>
@@ -128,10 +127,9 @@ interface ProcessStepProps {
   index: number;
   isActive: boolean;
   onClick: () => void;
-  totalSteps: number;
 }
 
-const ProcessStep = ({ step, index, isActive, onClick, totalSteps }: ProcessStepProps) => {
+const ProcessStep = ({ step, index, isActive, onClick }: ProcessStepProps) => {
   const isEven = index % 2 === 0;
 
   return (

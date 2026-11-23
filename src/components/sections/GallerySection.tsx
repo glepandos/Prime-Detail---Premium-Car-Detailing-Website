@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
 const GALLERY_IMAGES = [
@@ -67,11 +67,7 @@ export const GallerySection = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const handleMouseDown = (e: React.MouseEvent, index: number) => {
-    setDragStart({ x: e.clientX, index });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragStart) return;
     const delta = dragStart.x - e.clientX;
     if (Math.abs(delta) > 50) {
@@ -79,11 +75,11 @@ export const GallerySection = () => {
       setActiveIndex((prev) => (prev + direction + GALLERY_IMAGES.length) % GALLERY_IMAGES.length);
       setDragStart(null);
     }
-  };
+  }, [dragStart]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setDragStart(null);
-  };
+  }, []);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -92,7 +88,7 @@ export const GallerySection = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [dragStart]);
+  }, [dragStart, handleMouseMove, handleMouseUp]);
 
   const currentImage = GALLERY_IMAGES[activeIndex];
 
@@ -212,7 +208,7 @@ const BeforeAfterSlider = ({ beforeSrc, afterSrc, alt }: BeforeAfterSliderProps)
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
-  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMove = (e: MouseEvent | TouchEvent) => {
     if (!isDraggingRef.current || !containerRef.current) return;
 
     const rect = containerRef.current.getBoundingClientRect();

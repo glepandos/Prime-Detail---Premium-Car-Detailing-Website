@@ -90,7 +90,7 @@ export const BookingForm = () => {
     let hasErrors = false;
 
     (Object.keys(formData) as Array<keyof BookingData>).forEach((key) => {
-      const error = validateField(key, formData[key]);
+      const error = validateField(key, formData[key] || '');
       if (error) {
         newErrors[key] = error;
         hasErrors = true;
@@ -152,7 +152,7 @@ export const BookingForm = () => {
               <span className="text-emerald-400">Detailing Session</span>
             </h2>
             <p className="text-white/50 text-lg leading-relaxed mb-10">
-              Select your service, choose a time, and we'll handle the rest.
+              Select your service, choose a time, and we&apos;ll handle the rest.
               Confirmation within 2 hours during business hours.
             </p>
 
@@ -434,7 +434,7 @@ const SuccessMessage = ({ onReset }: { onReset: () => void }) => (
     </div>
     <h3 className="text-2xl md:text-3xl font-light text-white mb-3">Appointment Requested!</h3>
     <p className="text-white/60 text-lg mb-8 max-w-md mx-auto">
-      We've received your request and will confirm within 2 hours during business hours.
+      We&apos;ve received your request and will confirm within 2 hours during business hours.
       A calendar invite with details will be sent to your email.
     </p>
     <button
