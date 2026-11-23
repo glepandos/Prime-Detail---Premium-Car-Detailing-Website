@@ -1,471 +1,146 @@
 'use client';
 
+import { Suspense, useEffect, useMemo } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
+import { ContactShadows, Environment, Lightformer, OrbitControls, RoundedBox, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
-import { useEffect, useRef, useState, useMemo } from 'react';
-import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
-import {
-  Html,
-  AccumulativeShadows,
-  ContactShadows,
-} from '@react-three/drei';
-import { ShaderMaterial, Vector2, Clock } from 'three';
-import { vertexShader, fragmentShader } from '@/lib/shaders/detailingShaders';
-import { DetailingStage } from '@/types';
 
-extend({ ShaderMaterial });
-
-const STAGES: DetailingStage[] = [
-  {
-    id: 'dirty',
-    name: 'Before: Neglected',
-    description: 'Your vehicle arrives covered in road grime, oxidation, water spots, and embedded contaminants.',
-    color: '#8B7355',
-    bgColor: '#1a1612',
-    shaderUniforms: { uDirtAmount: 1, uWaterAmount: 0, uPolishAmount: 0, uCeramicAmount: 0 },
-    cameraPosition: [0, 1.2, 4],
-    carRotation: [0, -0.5, 0],
-  },
-  {
-    id: 'correction',
-    name: 'Process: Paint Correction',
-    description: 'Multi-stage machine polishing removes defects, oxidation, and swirls revealing true clarity.',
-    color: '#3A7BD5',
-    bgColor: '#0a1628',
-    shaderUniforms: { uDirtAmount: 0, uWaterAmount: 1, uPolishAmount: 0.5, uCeramicAmount: 0 },
-    cameraPosition: [0, 1.2, 4],
-    carRotation: [0, 0.5, 0],
-  },
-  {
-    id: 'perfect',
-    name: 'After: Ceramic Perfection',
-    description: 'Ceramic coating applied - hydrophobic, UV-resistant, 5-year protection with mirror finish.',
-    color: '#00D4AA',
-    bgColor: '#021814',
-    shaderUniforms: { uDirtAmount: 0, uWaterAmount: 0, uPolishAmount: 1, uCeramicAmount: 1 },
-    cameraPosition: [0, 1.2, 4],
-    carRotation: [0, 1.5, 0],
-  },
+export const STAGES = [
+  { id: 'dirty', bgColor: '#211e1a', name: 'Before detailing', description: 'The starting point. Every surface, carefully assessed.', color: '#c7ae8c' },
+  { id: 'correction', bgColor: '#111c29', name: 'Paint correction', description: 'Precision polishing. Depth and clarity restored.', color: '#9fc5e8' },
+  { id: 'perfect', bgColor: '#0b211b', name: 'Ceramic finish', description: 'Deep gloss. Sculpted reflections. Lasting protection.', color: '#64e2c1' },
 ];
 
-interface DetailingSceneProps {
-  onStageChange?: (stage: number) => void;
-  scrollProgress?: number;
-  currentStage?: number;
+function Car({ stage }: { stage: number }) {
+  const { scene } = useGLTF('/models/ferrari.glb', '/draco/');
+  const model = useMemo(() => {
+    const clone = scene.clone(true);
+    clone.traverse((object) => {
+      if (!(object instanceof THREE.Mesh)) return;
+      object.castShadow = true;
+      object.receiveShadow = true;
+      const name = object.name.toLowerCase();
+      if (name === 'body') {
+        object.material = new THREE.MeshPhysicalMaterial({
+          color: stage === 0 ? '#726c63' : stage === 1 ? '#607f9c' : '#8dacc5',
+          metalness: 0.85, roughness: stage === 0 ? 0.48 : 0.19,
+          clearcoat: 1, clearcoatRoughness: 0.08,
+        });
+      } else if (name === 'glass') {
+        object.material = new THREE.MeshPhysicalMaterial({ color: '#14202b', metalness: 0.3, roughness: 0.08, clearcoat: 1 });
+      } else if (name.startsWith('rim') || name === 'trim') {
+        object.material = new THREE.MeshStandardMaterial({ color: '#a4a9af', metalness: 0.95, roughness: 0.22 });
+      } else {
+        object.material = Array.isArray(object.material) ? object.material.map((m) => m.clone()) : object.material.clone();
+      }
+    });
+    const bounds = new THREE.Box3().setFromObject(clone);
+    const size = bounds.getSize(new THREE.Vector3());
+    const center = bounds.getCenter(new THREE.Vector3());
+    const scale = 4.7 / Math.max(size.x, size.y, size.z);
+    clone.scale.setScalar(scale);
+    clone.position.set(-center.x * scale, -bounds.min.y * scale + 0.025, -center.z * scale);
+    return clone;
+  }, [scene, stage]);
+  useEffect(() => () => {
+    model.traverse((object) => {
+      if (object instanceof THREE.Mesh) {
+        (Array.isArray(object.material) ? object.material : [object.material]).forEach((m) => m.dispose());
+      }
+    });
+  }, [model]);
+  return <primitive object={model} />;
 }
 
-const DetailingCarModel = ({ stage }: { stage: number }) => {
-  const { scene } = useThree();
-  const clock = useMemo(() => new Clock(), []);
-  const materialRef = useRef<ShaderMaterial | null>(null);
-  const groupRef = useRef<THREE.Group | null>(null);
-  const [modelLoaded, setModelLoaded] = useState(false);
-
-  // Create procedural car geometry since we don't have actual GLTF models
-  useEffect(() => {
-    if (groupRef.current) return;
-
-    const group = new THREE.Group();
-    groupRef.current = group;
-
-    // Create car body using primitive geometries
-    const bodyGeometry = new THREE.BoxGeometry(3.5, 1.2, 1.6);
-    const roofGeometry = new THREE.BoxGeometry(2, 0.8, 1.4);
-    const hoodGeometry = new THREE.BoxGeometry(1.2, 0.4, 1.6);
-    const trunkGeometry = new THREE.BoxGeometry(1, 0.5, 1.6);
-
-    const windowGeometry = new THREE.BoxGeometry(1.8, 0.6, 1.45);
-    const frontWindowGeometry = new THREE.BoxGeometry(0.8, 0.6, 1.5);
-    const rearWindowGeometry = new THREE.BoxGeometry(0.6, 0.5, 1.5);
-
-    const wheelGeometry = new THREE.CylinderGeometry(0.4, 0.4, 0.25, 16);
-    const rimGeometry = new THREE.CylinderGeometry(0.3, 0.3, 0.26, 16);
-
-    // Create shader material for car body
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        uTime: { value: 0 },
-        uProgress: { value: 0 },
-        uStage: { value: stage },
-        uResolution: { value: new Vector2() },
-        uMouse: { value: new Vector2() },
-        uDirtAmount: { value: STAGES[stage]?.shaderUniforms.uDirtAmount || 0 },
-        uWaterAmount: { value: STAGES[stage]?.shaderUniforms.uWaterAmount || 0 },
-        uPolishAmount: { value: STAGES[stage]?.shaderUniforms.uPolishAmount || 0 },
-        uCeramicAmount: { value: STAGES[stage]?.shaderUniforms.uCeramicAmount || 0 },
-      },
-      transparent: false,
-      side: THREE.DoubleSide,
-    });
-    materialRef.current = material;
-
-    // Glass material
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0x1a1a2e,
-      metalness: 0,
-      roughness: 0,
-      transmission: 0.8,
-      thickness: 0.1,
-      ior: 1.5,
-      transparent: true,
-      opacity: 0.3,
-    });
-
-    // Wheel material
-    const tireMaterial = new THREE.MeshStandardMaterial({
-      color: 0x0a0a0a,
-      roughness: 0.9,
-      metalness: 0,
-    });
-    const rimMaterial = new THREE.MeshStandardMaterial({
-      color: stage === 2 ? 0x2a2a2a : 0x1a1a1a,
-      roughness: stage === 2 ? 0.2 : 0.6,
-      metalness: 0.8,
-    });
-
-    // Car body parts
-    const body = new THREE.Mesh(bodyGeometry, material);
-    body.position.set(0, 0.6, 0);
-    body.castShadow = true;
-    body.receiveShadow = true;
-    group.add(body);
-
-    const roof = new THREE.Mesh(roofGeometry, material);
-    roof.position.set(0, 1.5, -0.1);
-    roof.castShadow = true;
-    roof.receiveShadow = true;
-    group.add(roof);
-
-    const hood = new THREE.Mesh(hoodGeometry, material);
-    hood.position.set(1.35, 0.8, 0);
-    hood.castShadow = true;
-    hood.receiveShadow = true;
-    group.add(hood);
-
-    const trunk = new THREE.Mesh(trunkGeometry, material);
-    trunk.position.set(-1.75, 0.85, 0);
-    trunk.castShadow = true;
-    trunk.receiveShadow = true;
-    group.add(trunk);
-
-    // Windows
-    const windows = new THREE.Mesh(windowGeometry, glassMaterial);
-    windows.position.set(0, 1.5, 0);
-    group.add(windows);
-
-    const frontWindow = new THREE.Mesh(frontWindowGeometry, glassMaterial);
-    frontWindow.position.set(1.6, 1.5, 0);
-    group.add(frontWindow);
-
-    const rearWindow = new THREE.Mesh(rearWindowGeometry, glassMaterial);
-    rearWindow.position.set(-1.45, 1.5, 0);
-    group.add(rearWindow);
-
-    // Wheels
-    const wheelPositions: [number, number, number][] = [
-      [1.3, 0.4, 0.95],
-      [1.3, 0.4, -0.95],
-      [-1.3, 0.4, 0.95],
-      [-1.3, 0.4, -0.95],
-    ];
-
-    wheelPositions.forEach((pos) => {
-      const wheel = new THREE.Mesh(wheelGeometry, tireMaterial);
-      wheel.position.set(pos[0], pos[1], pos[2]);
-      wheel.rotation.z = Math.PI / 2;
-      wheel.castShadow = true;
-      wheel.receiveShadow = true;
-      group.add(wheel);
-
-      const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-      rim.position.set(pos[0], pos[1], pos[2]);
-      rim.rotation.z = Math.PI / 2;
-      rim.castShadow = true;
-      group.add(rim);
-    });
-
-    // Headlights and taillights
-    const lightGeometry = new THREE.BoxGeometry(0.15, 0.1, 0.3);
-    const headlightMaterial = new THREE.MeshBasicMaterial({
-      color: stage === 2 ? 0xffffee : 0x888888,
-      transparent: true,
-      opacity: 0.8,
-    });
-    const taillightMaterial = new THREE.MeshBasicMaterial({
-      color: 0xff3333,
-      transparent: true,
-      opacity: 0.6,
-    });
-
-    const headlightL = new THREE.Mesh(lightGeometry, headlightMaterial);
-    headlightL.position.set(1.9, 0.7, 0.7);
-    group.add(headlightL);
-
-    const headlightR = new THREE.Mesh(lightGeometry, headlightMaterial);
-    headlightR.position.set(1.9, 0.7, -0.7);
-    group.add(headlightR);
-
-    const taillightL = new THREE.Mesh(lightGeometry, taillightMaterial);
-    taillightL.position.set(-1.9, 0.7, 0.7);
-    group.add(taillightL);
-
-    const taillightR = new THREE.Mesh(lightGeometry, taillightMaterial);
-    taillightR.position.set(-1.9, 0.7, -0.7);
-    group.add(taillightR);
-
-    // Badge
-    const badgeGeometry = new THREE.RingGeometry(0.08, 0.15, 32);
-    const badgeMaterial = new THREE.MeshStandardMaterial({
-      color: 0xffffff,
-      metalness: 1,
-      roughness: 0.1,
-      side: THREE.DoubleSide,
-    });
-    const badge = new THREE.Mesh(badgeGeometry, badgeMaterial);
-    badge.position.set(1.9, 1.0, 0);
-    badge.rotation.y = Math.PI / 2;
-    group.add(badge);
-
-    scene.add(group);
-    setModelLoaded(true);
-
-    return () => {
-      scene.remove(group);
-      material.dispose();
-      glassMaterial.dispose();
-      tireMaterial.dispose();
-      rimMaterial.dispose();
-      headlightMaterial.dispose();
-      taillightMaterial.dispose();
-      badgeMaterial.dispose();
-      bodyGeometry.dispose();
-      roofGeometry.dispose();
-      hoodGeometry.dispose();
-      trunkGeometry.dispose();
-      windowGeometry.dispose();
-      frontWindowGeometry.dispose();
-      rearWindowGeometry.dispose();
-      wheelGeometry.dispose();
-      rimGeometry.dispose();
-      lightGeometry.dispose();
-      badgeGeometry.dispose();
-    };
-  }, [scene, stage]);
-
-  // Update shader uniforms on stage change
-  useEffect(() => {
-    if (materialRef.current) {
-      const uniforms = materialRef.current.uniforms;
-      const stageData = STAGES[stage] || STAGES[0];
-      uniforms.uStage.value = stage;
-      uniforms.uDirtAmount.value = stageData.shaderUniforms.uDirtAmount;
-      uniforms.uWaterAmount.value = stageData.shaderUniforms.uWaterAmount;
-      uniforms.uPolishAmount.value = stageData.shaderUniforms.uPolishAmount;
-      uniforms.uCeramicAmount.value = stageData.shaderUniforms.uCeramicAmount;
-    }
-  }, [stage]);
-
-  // Animation loop
-  useFrame(() => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = clock.getElapsedTime();
-    }
-
-    if (groupRef.current) {
-      // Subtle floating animation
-      groupRef.current.position.y = 0.6 + Math.sin(clock.getElapsedTime() * 0.5) * 0.02;
-      // Slow rotation for showcase
-      groupRef.current.rotation.y += 0.0005;
-    }
-  });
-
-  if (!modelLoaded) return null;
-
-  return <group ref={groupRef} />;
-};
-
-const StageEnvironment = ({ stage }: { stage: number }) => {
-  const stageData = STAGES[stage];
-  const { scene } = useThree();
-
-  useEffect(() => {
-    scene.background = new THREE.Color(stageData.bgColor);
-  }, [scene, stageData.bgColor]);
-
+function Garage() {
   return (
-    <>
-      <hemisphereLight args={['#dcecff', '#302820', 2]} />
-      <directionalLight position={[5, 8, 5]} intensity={3} castShadow />
-      <AccumulativeShadows temporal opacity={0.3} scale={10} />
-      <ContactShadows opacity={0.4} scale={10} blur={2} />
-    </>
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[32, 32]} />
+        <meshStandardMaterial color="#333a40" roughness={0.3} metalness={0.35} />
+      </mesh>
+      {/* Rear wall and framed sectional garage door. */}
+      <RoundedBox args={[15, 6, 0.24]} position={[0, 3, 5.5]} radius={0.06}>
+        <meshStandardMaterial color="#191f25" roughness={0.8} />
+      </RoundedBox>
+      <RoundedBox args={[6.4, 3.7, 0.16]} position={[0, 1.85, 5.29]} radius={0.03}>
+        <meshStandardMaterial color="#080c11" metalness={0.6} roughness={0.5} />
+      </RoundedBox>
+      {Array.from({ length: 10 }, (_, i) => (
+        <RoundedBox key={i} args={[6.1, 0.3, 0.08]} position={[0, 0.22 + i * 0.35, 5.16]} radius={0.015}>
+          <meshStandardMaterial color={i % 2 ? '#323a42' : '#2a323a'} metalness={0.5} roughness={0.45} />
+        </RoundedBox>
+      ))}
+      {[-1, 1].map((side) => (
+        <group key={side}>
+          <mesh position={[side * 7.4, 3, 0]}>
+            <boxGeometry args={[0.2, 6, 11]} />
+            <meshStandardMaterial color="#252d34" roughness={0.7} />
+          </mesh>
+          <mesh position={[side * 3.5, 2.2, 5.03]}>
+            <boxGeometry args={[0.055, 4, 0.045]} />
+            <meshStandardMaterial color="#c5eeff" emissive="#9ddfff" emissiveIntensity={3} />
+          </mesh>
+          {[0, 1, 2].map((i) => (
+            <mesh key={i} position={[side * 6.7, 2.3, 3.5 - i * 2.8]} rotation={[0, 0, side * -0.22]}>
+              <boxGeometry args={[0.06, 3.8, 0.1]} />
+              <meshStandardMaterial color="#e4f1ff" emissive="#cbe6ff" emissiveIntensity={4} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      {/* Service cabinets and detailing equipment. */}
+      {[-5.6, 5.6].map((x) => (
+        <group key={x} position={[x, 0, 4.6]}>
+          <RoundedBox args={[1.65, 1.05, 0.65]} position={[0, 0.55, 0]} radius={0.04}>
+            <meshStandardMaterial color="#20262c" metalness={0.6} roughness={0.3} />
+          </RoundedBox>
+          <mesh position={[0, 1.1, 0]}><boxGeometry args={[1.8, 0.06, 0.8]} /><meshStandardMaterial color="#9ba4a9" metalness={0.9} roughness={0.3} /></mesh>
+          {[0.3, 0.55, 0.8].map((y) => <mesh key={y} position={[0, y, -0.34]}><boxGeometry args={[1.4, 0.025, 0.035]} /><meshStandardMaterial color="#89969b" metalness={0.7} /></mesh>)}
+          {[-0.45, 0, 0.45].map((bx, i) => <mesh key={bx} position={[bx, 1.28, 0]}><cylinderGeometry args={[0.06, 0.075, 0.3, 12]} /><meshStandardMaterial color={i === 1 ? '#65b9a5' : '#b8c5cd'} roughness={0.4} /></mesh>)}
+        </group>
+      ))}
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} position={[0, 5.1, 3 - i * 3]} rotation={[Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[8.5, 0.12]} />
+          <meshBasicMaterial color="#d5edff" side={THREE.DoubleSide} />
+        </mesh>
+      ))}
+    </group>
   );
-};
+}
 
-const ParticleSystem = ({ stage }: { stage: number }) => {
-  const { scene } = useThree();
-  const pointsRef = useRef<THREE.Points | null>(null);
-  const clock = useMemo(() => new Clock(), []);
-
+function CameraFraming() {
+  const { camera, size } = useThree();
   useEffect(() => {
-    const count = stage === 0 ? 2000 : stage === 1 ? 3000 : 1000;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
-    const colors = new Float32Array(count * 3);
-    const velocities = new Float32Array(count * 3);
-
-    for (let i = 0; i < count; i++) {
-      const radius = 3 + Math.random() * 5;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-
-      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta) + 1;
-      positions[i * 3 + 2] = radius * Math.cos(phi);
-
-      sizes[i] = Math.random() * 0.05 + 0.02;
-
-      if (stage === 0) {
-        // Dirt particles - brown/dust
-        colors[i * 3] = 0.4 + Math.random() * 0.2;
-        colors[i * 3 + 1] = 0.3 + Math.random() * 0.15;
-        colors[i * 3 + 2] = 0.2 + Math.random() * 0.1;
-      } else if (stage === 1) {
-        // Water/soap particles - blue/white
-        colors[i * 3] = Math.random() * 0.3;
-        colors[i * 3 + 1] = 0.4 + Math.random() * 0.3;
-        colors[i * 3 + 2] = 0.6 + Math.random() * 0.4;
-      } else {
-        // Sparkle particles - white/gold
-        colors[i * 3] = 0.9 + Math.random() * 0.1;
-        colors[i * 3 + 1] = 0.9 + Math.random() * 0.1;
-        colors[i * 3 + 2] = 0.8 + Math.random() * 0.2;
-      }
-
-      velocities[i * 3] = (Math.random() - 0.5) * 0.01;
-      velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.01;
-      velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.01;
-    }
-
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
-
-    const material = new THREE.PointsMaterial({
-      size: 0.05,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.6,
-      sizeAttenuation: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-
-    const points = new THREE.Points(geometry, material);
-    pointsRef.current = points;
-    scene.add(points);
-
-    return () => {
-      scene.remove(points);
-      geometry.dispose();
-      material.dispose();
-    };
-  }, [scene, stage]);
-
-  useFrame(() => {
-    if (pointsRef.current) {
-      const positions = pointsRef.current.geometry.attributes.position.array as Float32Array;
-      const time = clock.getElapsedTime();
-
-      for (let i = 0; i < positions.length; i += 3) {
-        if (stage === 0) {
-          // Dirt falls slowly
-          positions[i + 1] -= 0.002;
-          if (positions[i + 1] < -2) positions[i + 1] = 5;
-        } else if (stage === 1) {
-          // Water droplets fall and swirl
-          positions[i + 1] -= 0.01;
-          positions[i] += Math.sin(time + i) * 0.002;
-          positions[i + 2] += Math.cos(time + i) * 0.002;
-          if (positions[i + 1] < -2) positions[i + 1] = 5;
-        } else {
-          // Sparkles float and fade
-          positions[i + 1] += Math.sin(time * 2 + i) * 0.001;
-          positions[i] += Math.cos(time * 1.5 + i) * 0.001;
-        }
-      }
-      pointsRef.current.geometry.attributes.position.needsUpdate = true;
-      pointsRef.current.rotation.y += 0.0001;
-    }
-  });
-
+    const mobile = size.width < 700;
+    camera.position.set(mobile ? 9 : 6.8, mobile ? 4.1 : 2.9, mobile ? -14 : -9.8);
+    camera.lookAt(0, 0.85, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width]);
   return null;
-};
+}
 
-export const DetailingScene = ({
-  onStageChange,
-  currentStage = 0,
-}: DetailingSceneProps) => {
-
-  useEffect(() => {
-    if (onStageChange) {
-      onStageChange(currentStage);
-    }
-  }, [currentStage, onStageChange]);
-
-  return (
-    <Canvas
-      camera={{ position: STAGES[currentStage].cameraPosition, fov: 45 }}
-      gl={{ antialias: true, alpha: true, preserveDrawingBuffer: false }}
-      style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}
-      onCreated={({ gl }) => {
-        gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.2;
-        gl.shadowMap.enabled = true;
-        gl.shadowMap.type = THREE.PCFSoftShadowMap;
-      }}
-    >
-      <StageEnvironment stage={currentStage} />
-      <DetailingCarModel stage={currentStage} />
-      <ParticleSystem stage={currentStage} />
-
-      <Html
-        transform
-        position={[0, 2.5, 0]}
-        style={{
-          pointerEvents: 'none',
-          textAlign: 'center',
-          color: STAGES[currentStage].color,
-          fontSize: '1.5rem',
-          fontWeight: 300,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          textShadow: '0 0 30px currentColor',
-        }}
-      >
-        {STAGES[currentStage].name}
-      </Html>
-
-      <Html
-        transform
-        position={[0, -2.5, 0]}
-        style={{
-          pointerEvents: 'none',
-          textAlign: 'center',
-          color: '#ffffff88',
-          fontSize: '0.9rem',
-          maxWidth: '300px',
-          lineHeight: 1.6,
-        }}
-      >
-        {STAGES[currentStage].description}
-      </Html>
-    </Canvas>
-  );
-};
-
-export { STAGES };
+export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; scrollProgress?: number; onStageChange?: (stage: number) => void }) => (
+  <Canvas shadows dpr={[1, 1.6]} camera={{ position: [6.8, 2.9, -9.8], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true }} style={{ position: 'absolute', inset: 0 }}>
+    <color attach="background" args={['#11191f']} />
+    <fog attach="fog" args={['#11191f', 19, 45]} />
+    <CameraFraming />
+    <ambientLight intensity={0.55} />
+    <hemisphereLight args={['#d2e8ff', '#48515a', 1.5]} />
+    <spotLight position={[1, 7, -2]} intensity={110} angle={0.9} penumbra={0.65} castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0002} />
+    <pointLight position={[-5, 3, 2]} color="#9bd9f2" intensity={25} />
+    <pointLight position={[5, 3, -1]} color="#e2f1ff" intensity={30} />
+    <Garage />
+    <Suspense fallback={null}>
+      <Environment resolution={128} frames={1}>
+        <Lightformer intensity={4} position={[0, 6, -2]} rotation={[Math.PI / 2, 0, 0]} scale={[9, 3, 1]} />
+        <Lightformer intensity={3} position={[-5, 3, 0]} rotation={[0, Math.PI / 2, 0]} scale={[2, 5, 1]} />
+        <Lightformer intensity={3} position={[5, 3, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[2, 5, 1]} />
+      </Environment>
+      <Car stage={currentStage} />
+      <ContactShadows position={[0, 0.015, 0]} opacity={0.6} scale={11} blur={2.5} far={5} resolution={256} frames={1} />
+    </Suspense>
+    <OrbitControls makeDefault target={[0, 0.85, 0]} enablePan={false} enableZoom={false} enableRotate={false} />
+  </Canvas>
+);

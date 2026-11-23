@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Navigation } from '@/components/ui/Navigation';
 import { Footer } from '@/components/ui/Footer';
-import { HorizontalScroll, StageSection } from '@/components/three/HorizontalScroll';
+import { HorizontalScroll } from '@/components/three/HorizontalScroll';
 
 // Dynamic imports for heavy components
 const DetailingScene = dynamic(() => import('@/components/three/DetailingScene').then((mod) => mod.DetailingScene), {
@@ -34,7 +34,7 @@ const GallerySection = dynamic(() => import('@/components/sections/GallerySectio
 
 export default function HomePage() {
   const [scrollProgress, setScrollProgress] = useState(0);
-  const [currentStage, setCurrentStage] = useState(0);
+  const [currentStage, setCurrentStage] = useState(2);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -58,33 +58,11 @@ export default function HomePage() {
         setCurrentStage={setCurrentStage}
         onStageChange={handleStageChange}
       >
-        {/* Stage 1: Dirty/Neglected */}
-        <StageSection id="stage-dirty">
-          <DetailingScene
-            currentStage={0}
-            scrollProgress={scrollProgress}
-          />
-        </StageSection>
-
-        {/* Stage 2: Correction Process */}
-        <StageSection id="stage-correction">
-          <DetailingScene
-            currentStage={1}
-            scrollProgress={scrollProgress}
-          />
-        </StageSection>
-
-        {/* Stage 3: Perfect/After */}
-        <StageSection id="stage-perfect">
-          <DetailingScene
-            currentStage={2}
-            scrollProgress={scrollProgress}
-          />
-        </StageSection>
+        <DetailingScene currentStage={currentStage} scrollProgress={scrollProgress} />
       </HorizontalScroll>
 
       {/* Content Sections (Vertical Scroll After Horizontal) */}
-      <div className="relative z-20 pt-screen">
+      <div className="relative z-20">
         <ServiceTiers />
         <ProcessSection />
         <GallerySection />
