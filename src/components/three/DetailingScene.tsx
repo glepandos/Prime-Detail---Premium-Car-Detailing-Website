@@ -4,6 +4,9 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, RoundedBox, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
+
+RectAreaLightUniformsLib.init();
 
 export const STAGES = [
   { id: 'dirty', bgColor: '#211e1a', name: 'Before detailing', description: 'The starting point. Every surface, carefully assessed.', color: '#c7ae8c' },
@@ -20,16 +23,58 @@ function Car({ stage }: { stage: number }) {
       object.castShadow = true;
       object.receiveShadow = true;
       const name = object.name.toLowerCase();
+      // The source model uses legacy FBX materials; rebuild each surface as PBR.
+      const original = Array.isArray(object.material) ? object.material[0] : object.material;
+      const sourceName = original.name.toLowerCase();
       if (name === 'body') {
         object.material = new THREE.MeshPhysicalMaterial({
-          color: stage === 0 ? '#726c63' : stage === 1 ? '#607f9c' : '#8dacc5',
-          metalness: 0.85, roughness: stage === 0 ? 0.48 : 0.19,
-          clearcoat: 1, clearcoatRoughness: 0.08,
+          color: stage === 0 ? '#59564f' : stage === 1 ? '#4e677a' : '#607e93',
+          metalness: 0.78, roughness: stage === 0 ? 0.38 : 0.18,
+          clearcoat: 1, clearcoatRoughness: 0.035, envMapIntensity: 1.1,
         });
+        const paint = object.material as THREE.MeshPhysicalMaterial;
+        // Fine metallic grain below the smooth clearcoat; preserve Three.js PBR lighting.
+        paint.onBeforeCompile = (shader) => {
+          shader.vertexShader = shader.vertexShader
+            .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;')
+            .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPaintPosition = position;');
+          shader.fragmentShader = shader.fragmentShader
+            .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;')
+            .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+              float paintGrain = fract(sin(dot(floor(vPaintPosition * 1800.0), vec3(12.9898,78.233,45.164))) * 43758.5453);
+              roughnessFactor = clamp(roughnessFactor + (paintGrain - 0.5) * 0.018, 0.06, 1.0);
+            `);
+        };
+        paint.customProgramCacheKey = () => 'automotive-metallic-clearcoat-v1';
       } else if (name === 'glass') {
-        object.material = new THREE.MeshPhysicalMaterial({ color: '#14202b', metalness: 0.3, roughness: 0.08, clearcoat: 1 });
-      } else if (name.startsWith('rim') || name === 'trim') {
-        object.material = new THREE.MeshStandardMaterial({ color: '#a4a9af', metalness: 0.95, roughness: 0.22 });
+        object.castShadow = false;
+        object.renderOrder = 2;
+        object.material = new THREE.MeshPhysicalMaterial({
+          color: '#ffffff', metalness: 0, roughness: 0.025,
+          transmission: 1, thickness: 0.015, ior: 1.46,
+          transparent: true, opacity: 1, depthWrite: false,
+          envMapIntensity: 0.4, side: THREE.DoubleSide,
+        });
+      } else if (sourceName.includes('leather') || name.includes('interior') || name === 'carpet') {
+        object.material = new THREE.MeshStandardMaterial({
+          color: sourceName.includes('red') ? '#382720' : name === 'carpet' ? '#101215' : '#222428',
+          metalness: 0, roughness: name === 'carpet' ? 0.98 : 0.75,
+          envMapIntensity: 0.3,
+        });
+      } else if (name.includes('carbon')) {
+        object.material = new THREE.MeshPhysicalMaterial({ color: '#171b20', metalness: 0.3, roughness: 0.36, clearcoat: 0.6 });
+      } else if (name.startsWith('rim') || name.startsWith('wheel')) {
+        object.material = new THREE.MeshStandardMaterial({ color: '#626a72', metalness: 1, roughness: 0.28 });
+      } else if (name.startsWith('brake')) {
+        object.material = new THREE.MeshStandardMaterial({ color: '#53565a', metalness: 0.88, roughness: 0.5 });
+      } else if (name.includes('tire') || name.includes('grill') || name === 'wipers' || name.includes('plastic')) {
+        object.material = new THREE.MeshStandardMaterial({ color: '#101215', metalness: 0, roughness: 0.88 });
+      } else if (name === 'lights') {
+        object.material = new THREE.MeshPhysicalMaterial({ color: '#dbe8ed', metalness: 0.2, roughness: 0.1, transmission: 0.35, thickness: 0.05, clearcoat: 1 });
+      } else if (name.includes('lights_red')) {
+        object.material = new THREE.MeshPhysicalMaterial({ color: '#660807', emissive: '#a00b07', emissiveIntensity: 0.25, roughness: 0.2, clearcoat: 1 });
+      } else if (name === 'chrome' || name.includes('metal')) {
+        object.material = new THREE.MeshStandardMaterial({ color: '#979fa5', metalness: 1, roughness: 0.26 });
       } else {
         object.material = Array.isArray(object.material) ? object.material.map((m) => m.clone()) : object.material.clone();
       }
@@ -57,7 +102,7 @@ function Garage() {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[32, 32]} />
-        <meshStandardMaterial color="#333a40" roughness={0.3} metalness={0.35} />
+        <meshStandardMaterial color="#181d23" roughness={0.68} metalness={0.08} />
       </mesh>
       {/* Rear wall and framed sectional garage door. */}
       <RoundedBox args={[15, 6, 0.24]} position={[0, 3, 5.5]} radius={0.06}>
@@ -79,12 +124,12 @@ function Garage() {
           </mesh>
           <mesh position={[side * 3.5, 2.2, 5.03]}>
             <boxGeometry args={[0.055, 4, 0.045]} />
-            <meshStandardMaterial color="#c5eeff" emissive="#9ddfff" emissiveIntensity={3} />
+            <meshStandardMaterial color="#c5eeff" emissive="#9ddfff" emissiveIntensity={1.5} />
           </mesh>
           {[0, 1, 2].map((i) => (
             <mesh key={i} position={[side * 6.7, 2.3, 3.5 - i * 2.8]} rotation={[0, 0, side * -0.22]}>
               <boxGeometry args={[0.06, 3.8, 0.1]} />
-              <meshStandardMaterial color="#e4f1ff" emissive="#cbe6ff" emissiveIntensity={4} />
+              <meshStandardMaterial color="#e4f1ff" emissive="#cbe6ff" emissiveIntensity={1.8} />
             </mesh>
           ))}
         </group>
@@ -108,6 +153,16 @@ function Garage() {
       ))}
     </group>
   );
+}
+
+function Softbox({ position, intensity, width, height }: { position: [number, number, number]; intensity: number; width: number; height: number }) {
+  const light = useMemo(() => {
+    const area = new THREE.RectAreaLight('#dfebf5', intensity, width, height);
+    area.position.set(...position);
+    area.lookAt(0, 0.8, 0);
+    return area;
+  }, [position, intensity, width, height]);
+  return <primitive object={light} />;
 }
 
 function CameraFraming() {
@@ -152,21 +207,23 @@ function CameraFraming() {
 }
 
 export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; scrollProgress?: number; onStageChange?: (stage: number) => void }) => (
-  <Canvas shadows dpr={[1, 1.6]} camera={{ position: [4.3, 2.05, -6.2], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true }} style={{ position: 'absolute', inset: 0 }}>
+  <Canvas shadows dpr={[1, 2]} camera={{ position: [4.3, 2.05, -6.2], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true, toneMappingExposure: 0.85 }} style={{ position: 'absolute', inset: 0 }}>
     <color attach="background" args={['#11191f']} />
     <fog attach="fog" args={['#11191f', 19, 45]} />
     <CameraFraming />
-    <ambientLight intensity={0.55} />
-    <hemisphereLight args={['#d2e8ff', '#48515a', 1.5]} />
-    <spotLight position={[1, 7, -2]} intensity={110} angle={0.9} penumbra={0.65} castShadow shadow-mapSize={[1024, 1024]} shadow-bias={-0.0002} />
-    <pointLight position={[-5, 3, 2]} color="#9bd9f2" intensity={25} />
-    <pointLight position={[5, 3, -1]} color="#e2f1ff" intensity={30} />
+    <ambientLight intensity={0.2} />
+    <hemisphereLight args={['#d2e8ff', '#20252b', 0.7]} />
+    <Softbox position={[-2, 4.5, -3]} intensity={12} width={5} height={0.45} />
+    <Softbox position={[4, 3, 3]} intensity={8} width={3.5} height={0.65} />
+    <Softbox position={[-4, 2.5, 0]} intensity={6} width={0.45} height={3} />
     <Garage />
     <Suspense fallback={null}>
-      <Environment resolution={128} frames={1}>
-        <Lightformer intensity={4} position={[0, 6, -2]} rotation={[Math.PI / 2, 0, 0]} scale={[9, 3, 1]} />
-        <Lightformer intensity={3} position={[-5, 3, 0]} rotation={[0, Math.PI / 2, 0]} scale={[2, 5, 1]} />
-        <Lightformer intensity={3} position={[5, 3, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[2, 5, 1]} />
+      <Environment resolution={512} frames={1}>
+        <Lightformer intensity={2} position={[0, 4, -6]} rotation={[Math.PI / 6, 0, 0]} scale={[5, 1.4, 1]} />
+        <Lightformer intensity={3} position={[4, 2.5, 3]} rotation={[0, -Math.PI / 2, 0]} scale={[1.2, 3, 1]} />
+        <Lightformer intensity={3.2} position={[0, 6, -2]} rotation={[Math.PI / 2, 0, 0]} scale={[7, 0.45, 1]} />
+        <Lightformer intensity={1.8} position={[-5, 3, 0]} rotation={[0, Math.PI / 2, 0]} scale={[0.8, 4, 1]} />
+        <Lightformer intensity={1.8} position={[5, 3, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[0.8, 4, 1]} />
       </Environment>
       <Car stage={currentStage} />
       <ContactShadows position={[0, 0.015, 0]} opacity={0.6} scale={11} blur={2.5} far={5} resolution={256} frames={1} />
