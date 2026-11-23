@@ -5,7 +5,6 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame, useThree, extend } from '@react-three/fiber';
 import {
   Html,
-  Environment,
   AccumulativeShadows,
   ContactShadows,
 } from '@react-three/drei';
@@ -296,17 +295,8 @@ const StageEnvironment = ({ stage }: { stage: number }) => {
 
   return (
     <>
-      <Environment
-        preset="city"
-        files={[
-          '/textures/environment/px.png',
-          '/textures/environment/nx.png',
-          '/textures/environment/py.png',
-          '/textures/environment/ny.png',
-          '/textures/environment/pz.png',
-          '/textures/environment/nz.png',
-        ]}
-      />
+      <hemisphereLight args={['#dcecff', '#302820', 2]} />
+      <directionalLight position={[5, 8, 5]} intensity={3} castShadow />
       <AccumulativeShadows temporal opacity={0.3} scale={10} />
       <ContactShadows opacity={0.4} scale={10} blur={2} />
     </>
@@ -419,7 +409,6 @@ export const DetailingScene = ({
   onStageChange,
   currentStage = 0,
 }: DetailingSceneProps) => {
-  useThree();
 
   useEffect(() => {
     if (onStageChange) {
