@@ -6,7 +6,7 @@
   "devCommand": "npm run dev",
   "installCommand": "npm ci --legacy-peer-deps",
   "outputDirectory": ".next",
-  "regions": ["iad1", "sfo1", "lhr1", "hnd1", "sin1"],
+  "regions": ["iad1"],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30,
