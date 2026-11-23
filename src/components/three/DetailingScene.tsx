@@ -1,8 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useMemo } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, Lightformer, OrbitControls, RoundedBox, useGLTF } from '@react-three/drei';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { ContactShadows, Environment, Lightformer, RoundedBox, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 export const STAGES = [
@@ -37,7 +37,7 @@ function Car({ stage }: { stage: number }) {
     const bounds = new THREE.Box3().setFromObject(clone);
     const size = bounds.getSize(new THREE.Vector3());
     const center = bounds.getCenter(new THREE.Vector3());
-    const scale = 4.7 / Math.max(size.x, size.y, size.z);
+    const scale = 5.4 / Math.max(size.x, size.y, size.z);
     clone.scale.setScalar(scale);
     clone.position.set(-center.x * scale, -bounds.min.y * scale + 0.025, -center.z * scale);
     return clone;
@@ -112,17 +112,47 @@ function Garage() {
 
 function CameraFraming() {
   const { camera, size } = useThree();
+  const pointer = useRef({ x: 0, y: 0 });
+  const base = useRef(new THREE.Vector3(4.3, 2.05, -6.2));
   useEffect(() => {
     const mobile = size.width < 700;
-    camera.position.set(mobile ? 9 : 6.8, mobile ? 4.1 : 2.9, mobile ? -14 : -9.8);
+    base.current.set(mobile ? 9.2 : 4.3, mobile ? 4.1 : 2.05, mobile ? -14.4 : -6.2);
+    camera.position.copy(base.current);
     camera.lookAt(0, 0.85, 0);
     camera.updateProjectionMatrix();
   }, [camera, size.width]);
+  useEffect(() => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const reset = () => { pointer.current = { x: 0, y: 0 }; };
+    reset();
+    const move = (event: PointerEvent) => {
+      if (event.pointerType === 'touch' || reduced.matches || size.width < 700) { reset(); return; }
+      pointer.current = {
+        x: THREE.MathUtils.clamp(event.clientX / window.innerWidth * 2 - 1, -1, 1),
+        y: THREE.MathUtils.clamp(event.clientY / window.innerHeight * 2 - 1, -1, 1),
+      };
+    };
+    window.addEventListener('pointermove', move);
+    document.documentElement.addEventListener('pointerleave', reset);
+    window.addEventListener('blur', reset);
+    reduced.addEventListener('change', reset);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      document.documentElement.removeEventListener('pointerleave', reset);
+      window.removeEventListener('blur', reset);
+      reduced.removeEventListener('change', reset);
+    };
+  }, [size.width]);
+  useFrame((_, delta) => {
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, base.current.x + pointer.current.x * 0.5, 4, delta);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, base.current.y - pointer.current.y * 0.2, 4, delta);
+    camera.lookAt(0, 0.85, 0);
+  });
   return null;
 }
 
 export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; scrollProgress?: number; onStageChange?: (stage: number) => void }) => (
-  <Canvas shadows dpr={[1, 1.6]} camera={{ position: [6.8, 2.9, -9.8], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true }} style={{ position: 'absolute', inset: 0 }}>
+  <Canvas shadows dpr={[1, 1.6]} camera={{ position: [4.3, 2.05, -6.2], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true }} style={{ position: 'absolute', inset: 0 }}>
     <color attach="background" args={['#11191f']} />
     <fog attach="fog" args={['#11191f', 19, 45]} />
     <CameraFraming />
@@ -141,6 +171,5 @@ export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; sc
       <Car stage={currentStage} />
       <ContactShadows position={[0, 0.015, 0]} opacity={0.6} scale={11} blur={2.5} far={5} resolution={256} frames={1} />
     </Suspense>
-    <OrbitControls makeDefault target={[0, 0.85, 0]} enablePan={false} enableZoom={false} enableRotate={false} />
   </Canvas>
 );
