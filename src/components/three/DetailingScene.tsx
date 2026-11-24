@@ -175,7 +175,7 @@ function Garage() {
       </mesh>
       {/* Rear wall and framed sectional garage door. */}
       <RoundedBox args={[15, 6, 0.24]} position={[0, 3, 5.5]} radius={0.06} smoothness={1}>
-        <meshStandardMaterial color="#657078" roughness={0.85} />
+        <meshStandardMaterial color="#3e474f" roughness={0.85} />
       </RoundedBox>
       <RoundedBox args={[6.4, 3.7, 0.16]} position={[0, 1.85, 5.29]} radius={0.03} smoothness={1}>
         <meshStandardMaterial color="#080c11" metalness={0.6} roughness={0.5} />
@@ -189,7 +189,7 @@ function Garage() {
         <group key={side}>
           <mesh position={[side * 7.4, 3, 0]}>
             <boxGeometry args={[0.2, 6, 11]} />
-            <meshStandardMaterial color="#77838b" roughness={0.8} />
+            <meshStandardMaterial color="#48535c" roughness={0.8} />
           </mesh>
           <mesh position={[side * 3.5, 2.2, 5.03]}>
             <boxGeometry args={[0.055, 4, 0.045]} />
@@ -277,7 +277,6 @@ export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; sc
     <Softbox position={[-2, 4.5, -3]} intensity={10} width={5} height={0.45} />
     <Softbox position={[4, 3, 3]} intensity={6.8} width={3.5} height={0.65} />
     <Softbox position={[-4, 2.5, 0]} intensity={6} width={0.45} height={3} />
-    <Softbox position={[0, 4, -1]} intensity={7.5} width={5.8} height={0.65} />
     <Softbox position={[0, 4, 2]} intensity={6} width={5.8} height={0.65} />
     <Garage />
     <Suspense fallback={null}>

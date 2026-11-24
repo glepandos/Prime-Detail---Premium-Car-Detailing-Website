@@ -90,6 +90,6 @@ export function EquipmentRack() {
     });
     geometries.forEach((geometry) => geometry.dispose());
   }, [rack]);
-  return <primitive object={rack} position={[2.8, 0, 4.5]} />;
+  return <primitive object={rack} position={[-4.6, 0, 4.5]} />;
 }
 
