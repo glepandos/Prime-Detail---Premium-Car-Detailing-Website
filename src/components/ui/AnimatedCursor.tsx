@@ -13,6 +13,19 @@ export default function AnimatedCursor() {
     let visible = false;
     let frame = 0;
     let hovered = false;
+    let pixelRatio = window.devicePixelRatio || 1;
+    let position = { x: 0, y: 0 };
+    const place = () => {
+      if (!cursor.current) return;
+      // Cancel browser zoom: the artwork remains 32 device pixels, like a native cursor.
+      cursor.current.style.transform = `translate3d(${position.x}px, ${position.y}px, 0) scale(${1 / pixelRatio}) translate(-8px, -5px)`;
+    };
+    const resize = () => {
+      const nextRatio = window.devicePixelRatio || 1;
+      position = { x: position.x * pixelRatio / nextRatio, y: position.y * pixelRatio / nextRatio };
+      pixelRatio = nextRatio;
+      place();
+    };
     let timer: ReturnType<typeof setTimeout> | undefined;
     const draw = () => {
       if (!cursor.current) return;
@@ -57,7 +70,9 @@ export default function AnimatedCursor() {
       }
       const hover = !!target.closest(interactive);
       transition(hover);
-      node.style.transform = `translate3d(${event.clientX - 8}px, ${event.clientY - 5}px, 0)`;
+      position = { x: event.clientX, y: event.clientY };
+      pixelRatio = window.devicePixelRatio || 1;
+      place();
       if (!visible) {
         root.setAttribute('data-studio-cursor', '');
         node.style.visibility = 'visible';
@@ -70,6 +85,7 @@ export default function AnimatedCursor() {
     window.addEventListener('pointerover', sync, { passive: true });
     document.documentElement.addEventListener('pointerleave', hide);
     window.addEventListener('blur', hide);
+    window.addEventListener('resize', resize, { passive: true });
     const visibility = () => { if (document.hidden) hide(); };
     document.addEventListener('visibilitychange', visibility);
     finePointer.addEventListener('change', hide);
@@ -79,6 +95,7 @@ export default function AnimatedCursor() {
       window.removeEventListener('pointerover', sync);
       document.documentElement.removeEventListener('pointerleave', hide);
       window.removeEventListener('blur', hide);
+      window.removeEventListener('resize', resize);
       document.removeEventListener('visibilitychange', visibility);
       finePointer.removeEventListener('change', hide);
     };

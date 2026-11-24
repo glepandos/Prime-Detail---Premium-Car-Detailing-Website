@@ -23,6 +23,7 @@
   pointer-events: none;
   z-index: 2147483647;
   will-change: transform;
+  transform-origin: 0 0;
 }
 
 .studio-cursor img { position: absolute; inset: 0; }
