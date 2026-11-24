@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@media (hover: hover) and (pointer: fine) {
+  html, body, canvas, a, button, summary, label[for], select,
+  [role='button'], [role='link'], input[type='checkbox'], input[type='radio'], .cursor-pointer {
+    cursor: url('/cursors/studio-pointer.svg') 8 9, auto;
+  }
+
+  input:disabled, button:disabled, [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
+}
+
 @layer base {
   :root {
     --background: #000000;
