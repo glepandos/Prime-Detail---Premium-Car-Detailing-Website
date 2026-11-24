@@ -2,22 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Native cursor files retain their original sizes, alpha and click hotspots. */
-@media (hover: hover) and (pointer: fine) {
-  html, body, canvas {
-    cursor: url('/cursors/gold-normal.cur'), auto;
-  }
-
-  a, button, summary, label[for], [role='button'], [role='link'],
-  input[type='checkbox'], input[type='radio'], select, .cursor-pointer {
-    cursor: url('/cursors/gold-link.cur'), pointer;
-  }
-
-  input:disabled, button:disabled, [aria-disabled='true'] {
-    cursor: not-allowed;
-  }
-}
-
 @layer base {
   :root {
     --background: #000000;
