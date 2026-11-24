@@ -10,12 +10,14 @@ RectAreaLightUniformsLib.init();
 
 export const STAGES = [
   { id: 'dirty', bgColor: '#211e1a', name: 'Before detailing', description: 'The starting point. Every surface, carefully assessed.', color: '#c7ae8c' },
-  { id: 'correction', bgColor: '#111c29', name: 'Paint correction', description: 'Precision polishing. Depth and clarity restored.', color: '#9fc5e8' },
+  { id: 'correction', bgColor: '#111c29', name: 'Protective film application', description: 'A transparent protective film is laid over each sculpted surface.', color: '#9fc5e8' },
   { id: 'perfect', bgColor: '#0b211b', name: 'Ceramic finish', description: 'Deep gloss. Sculpted reflections. Lasting protection.', color: '#64e2c1' },
 ];
 
 function Car({ stage }: { stage: number }) {
   const { scene } = useGLTF('/models/ferrari.glb', '/draco/');
+  const filmProgress = useRef({ value: 0 });
+  const filmElapsed = useRef(0);
   const model = useMemo(() => {
     const clone = scene.clone(true);
     clone.traverse((object) => {
@@ -28,7 +30,7 @@ function Car({ stage }: { stage: number }) {
       const sourceName = original.name.toLowerCase();
       if (name === 'body') {
         object.material = new THREE.MeshPhysicalMaterial({
-          color: stage === 0 ? '#59564f' : stage === 1 ? '#4e677a' : '#607e93',
+          color: stage === 0 ? '#8b650d' : '#b18410',
           metalness: 0.78, roughness: stage === 0 ? 0.38 : 0.18,
           clearcoat: 1, clearcoatRoughness: 0.035, envMapIntensity: 1.1,
         });
@@ -85,14 +87,63 @@ function Car({ stage }: { stage: number }) {
     const scale = 5.4 / Math.max(size.x, size.y, size.z);
     clone.scale.setScalar(scale);
     clone.position.set(-center.x * scale, -bounds.min.y * scale + 0.025, -center.z * scale);
-    return clone;
+    const group = new THREE.Group();
+    group.add(clone);
+    group.updateMatrixWorld(true);
+    if (stage === 1) {
+      const film = new THREE.MeshPhysicalMaterial({ color: '#ffffff', metalness: 0, roughness: 0.065, clearcoat: 1, clearcoatRoughness: 0.025, transmission: 0.92, thickness: 0.008, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, envMapIntensity: 0.8 });
+      film.onBeforeCompile = (shader) => {
+        shader.uniforms.uFilmProgress = filmProgress.current;
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nuniform float uFilmProgress;\nvarying float vFilmZ;')
+          .replace('#include <begin_vertex>', `#include <begin_vertex>
+            vFilmZ = position.z;
+            float front = mix(-2.9, 2.9, uFilmProgress);
+            float curl = exp(-pow((position.z - front) / 0.16, 2.0));
+            transformed += normal * (0.007 + curl * 0.16);
+          `);
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform float uFilmProgress;\nvarying float vFilmZ;')
+          .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+            float filmFront = mix(-2.9, 2.9, uFilmProgress);
+            if (vFilmZ > filmFront) discard;
+          `)
+          .replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\ndiffuseColor.a *= mix(1.0, 0.15, smoothstep(0.8, 1.0, uFilmProgress));')
+          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+            float edge = 1.0 - smoothstep(0.0, 0.075, abs(vFilmZ - filmFront));
+            totalEmissiveRadiance += vec3(0.12, 0.48, 0.55) * edge * 2.2;
+          `);
+      };
+      film.customProgramCacheKey = () => 'protective-film-application-v1';
+      const surfaces: THREE.Mesh[] = [];
+      group.traverse((object) => { if (object instanceof THREE.Mesh && object.name === 'body') surfaces.push(object); });
+      for (const surface of surfaces) {
+        const geometry = surface.geometry.clone().applyMatrix4(surface.matrixWorld);
+        const layer = new THREE.Mesh(geometry, film); layer.renderOrder = 3; layer.userData.ownedGeometry = true;
+        group.add(layer);
+      }
+    }
+    return group;
   }, [scene, stage]);
+  useEffect(() => {
+    filmElapsed.current = 0;
+    filmProgress.current.value = stage === 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1;
+  }, [stage]);
+  useFrame((_, delta) => {
+    if (stage !== 1 || filmProgress.current.value >= 1) return;
+    filmElapsed.current += Math.min(delta, 0.05);
+    const t = Math.min(1, filmElapsed.current / 5.5);
+    filmProgress.current.value = t * t * (3 - 2 * t);
+  });
   useEffect(() => () => {
+    const materials = new Set<THREE.Material>();
     model.traverse((object) => {
       if (object instanceof THREE.Mesh) {
-        (Array.isArray(object.material) ? object.material : [object.material]).forEach((m) => m.dispose());
+        (Array.isArray(object.material) ? object.material : [object.material]).forEach((m) => materials.add(m));
+        if (object.userData.ownedGeometry) object.geometry.dispose();
       }
     });
+    materials.forEach((material) => material.dispose());
   }, [model]);
   return <primitive object={model} />;
 }
@@ -106,21 +157,21 @@ function Garage() {
       </mesh>
       {/* Rear wall and framed sectional garage door. */}
       <RoundedBox args={[15, 6, 0.24]} position={[0, 3, 5.5]} radius={0.06}>
-        <meshStandardMaterial color="#191f25" roughness={0.8} />
+        <meshStandardMaterial color="#657078" roughness={0.85} />
       </RoundedBox>
       <RoundedBox args={[6.4, 3.7, 0.16]} position={[0, 1.85, 5.29]} radius={0.03}>
         <meshStandardMaterial color="#080c11" metalness={0.6} roughness={0.5} />
       </RoundedBox>
       {Array.from({ length: 10 }, (_, i) => (
         <RoundedBox key={i} args={[6.1, 0.3, 0.08]} position={[0, 0.22 + i * 0.35, 5.16]} radius={0.015}>
-          <meshStandardMaterial color={i % 2 ? '#323a42' : '#2a323a'} metalness={0.5} roughness={0.45} />
+          <meshStandardMaterial color={i % 2 ? '#566169' : '#4c575f'} metalness={0.5} roughness={0.45} />
         </RoundedBox>
       ))}
       {[-1, 1].map((side) => (
         <group key={side}>
           <mesh position={[side * 7.4, 3, 0]}>
             <boxGeometry args={[0.2, 6, 11]} />
-            <meshStandardMaterial color="#252d34" roughness={0.7} />
+            <meshStandardMaterial color="#77838b" roughness={0.8} />
           </mesh>
           <mesh position={[side * 3.5, 2.2, 5.03]}>
             <boxGeometry args={[0.055, 4, 0.045]} />
@@ -146,8 +197,8 @@ function Garage() {
         </group>
       ))}
       {[0, 1, 2].map((i) => (
-        <mesh key={i} position={[0, 5.1, 3 - i * 3]} rotation={[Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[8.5, 0.12]} />
+        <mesh key={i} position={[0, 3.9, 2.5 - i * 2.5]} rotation={[Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[5.8, 0.16]} />
           <meshBasicMaterial color="#d5edff" side={THREE.DoubleSide} />
         </mesh>
       ))}
@@ -168,10 +219,10 @@ function Softbox({ position, intensity, width, height }: { position: [number, nu
 function CameraFraming() {
   const { camera, size } = useThree();
   const pointer = useRef({ x: 0, y: 0 });
-  const base = useRef(new THREE.Vector3(4.3, 2.05, -6.2));
+  const base = useRef(new THREE.Vector3(3.75, 1.95, -5.65));
   useEffect(() => {
     const mobile = size.width < 700;
-    base.current.set(mobile ? 9.2 : 4.3, mobile ? 4.1 : 2.05, mobile ? -14.4 : -6.2);
+    base.current.set(mobile ? 8.8 : 3.75, mobile ? 3.9 : 1.95, mobile ? -13.8 : -5.65);
     camera.position.copy(base.current);
     camera.lookAt(0, 0.85, 0);
     camera.updateProjectionMatrix();
@@ -207,7 +258,7 @@ function CameraFraming() {
 }
 
 export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; scrollProgress?: number; onStageChange?: (stage: number) => void }) => (
-  <Canvas shadows dpr={[1, 2]} camera={{ position: [4.3, 2.05, -6.2], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true, toneMappingExposure: 0.85 }} style={{ position: 'absolute', inset: 0 }}>
+  <Canvas shadows dpr={[1, 2]} camera={{ position: [3.75, 1.95, -5.65], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true, toneMappingExposure: 0.85 }} style={{ position: 'absolute', inset: 0 }}>
     <color attach="background" args={['#11191f']} />
     <fog attach="fog" args={['#11191f', 19, 45]} />
     <CameraFraming />
@@ -216,6 +267,8 @@ export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; sc
     <Softbox position={[-2, 4.5, -3]} intensity={12} width={5} height={0.45} />
     <Softbox position={[4, 3, 3]} intensity={8} width={3.5} height={0.65} />
     <Softbox position={[-4, 2.5, 0]} intensity={6} width={0.45} height={3} />
+    <Softbox position={[0, 4, -1]} intensity={9} width={5.8} height={0.65} />
+    <Softbox position={[0, 4, 2]} intensity={7} width={5.8} height={0.65} />
     <Garage />
     <Suspense fallback={null}>
       <Environment resolution={512} frames={1}>
