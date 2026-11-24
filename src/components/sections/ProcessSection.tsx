@@ -75,7 +75,7 @@ export const ProcessSection = () => {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <section id="process" className="relative py-24 md:py-32 px-6 bg-black">
+    <section id="process" className="relative py-24 md:py-32 px-6 material-background">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="text-center mb-16 md:mb-24">

@@ -62,7 +62,7 @@ const ICONS = {
 
 export const Footer = () => {
   return (
-    <footer id="contact" className="relative bg-black border-t border-white/10">
+    <footer id="contact" className="relative material-background border-t border-white/10">
       <div className="max-w-7xl mx-auto px-6 py-16 md:py-24">
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 md:gap-12 mb-16">
           {/* Brand */}

@@ -48,7 +48,7 @@ export const GallerySection = () => {
   const current = PAIRS[activeIndex];
   const change = (step: number) => setActiveIndex((index) => (index + step + PAIRS.length) % PAIRS.length);
   return (
-    <section id="gallery" className="relative bg-black px-6 py-24 md:py-32">
+    <section id="gallery" className="relative material-background px-6 py-24 md:py-32">
       <div className="mx-auto max-w-7xl">
         <div className="mb-12 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <div>

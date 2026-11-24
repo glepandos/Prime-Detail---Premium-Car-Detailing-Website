@@ -67,7 +67,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
       </head>
-      <body className="bg-black text-white min-h-screen">
+      <body className="material-background text-white min-h-screen">
         {children}
         <AnimatedCursor />
       </body>

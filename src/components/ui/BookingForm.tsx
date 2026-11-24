@@ -139,7 +139,7 @@ export const BookingForm = () => {
   const minDate = new Date().toISOString().split('T')[0];
 
   return (
-    <section id="booking" className="relative py-24 md:py-32 px-6 bg-black">
+    <section id="booking" className="relative py-24 md:py-32 px-6 material-background">
       <div className="max-w-7xl mx-auto">
         <div className="grid lg:grid-cols-2 gap-12 md:gap-16 items-start">
           {/* Info Panel */}

@@ -46,7 +46,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-black text-white overflow-x-hidden">
+    <div className="relative min-h-screen material-background text-white overflow-x-hidden">
       {/* Navigation */}
       <Navigation />
 
@@ -72,7 +72,7 @@ export default function HomePage() {
 
       {/* Loading Screen */}
       {!isLoaded && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center animate-fade-out">
+        <div className="fixed inset-0 material-background z-50 flex items-center justify-center animate-fade-out">
           <div className="text-center">
             <svg width="80" height="80" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-6 text-emerald-400 animate-spin">
               <defs>
