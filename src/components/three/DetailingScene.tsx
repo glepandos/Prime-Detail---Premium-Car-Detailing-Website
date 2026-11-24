@@ -19,6 +19,8 @@ function Car({ stage }: { stage: number }) {
   const filmProgress = useRef({ value: 0 });
   const filmElapsed = useRef(0);
   const model = useMemo(() => {
+    filmProgress.current.value = stage === 1 ? 0 : 1;
+    filmElapsed.current = 0;
     const clone = scene.clone(true);
     clone.traverse((object) => {
       if (!(object instanceof THREE.Mesh)) return;
@@ -28,26 +30,38 @@ function Car({ stage }: { stage: number }) {
       // The source model uses legacy FBX materials; rebuild each surface as PBR.
       const original = Array.isArray(object.material) ? object.material[0] : object.material;
       const sourceName = original.name.toLowerCase();
-      if (name === 'body') {
+      if (sourceName === 'ferrari_yellow') {
+        if (name === 'yellow_trim') object.visible = false;
+        object.material = new THREE.MeshStandardMaterial({ color: '#202327', metalness: 0.55, roughness: 0.45 });
+      } else if (name === 'body') {
         object.material = new THREE.MeshPhysicalMaterial({
-          color: stage === 0 ? '#8b650d' : '#b18410',
-          metalness: 0.78, roughness: stage === 0 ? 0.38 : 0.18,
+          color: stage === 2 ? '#b18410' : '#8b650d',
+          metalness: 0.78, roughness: stage === 2 ? 0.18 : 0.38,
           clearcoat: 1, clearcoatRoughness: 0.035, envMapIntensity: 1.1,
         });
         const paint = object.material as THREE.MeshPhysicalMaterial;
         // Fine metallic grain below the smooth clearcoat; preserve Three.js PBR lighting.
         paint.onBeforeCompile = (shader) => {
+          shader.uniforms.uFilmProgress = filmProgress.current;
+          shader.uniforms.uApplyFilm = { value: stage === 1 ? 1 : 0 };
+          shader.uniforms.uFilmColor = { value: new THREE.Color('#b18410') };
           shader.vertexShader = shader.vertexShader
-            .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;')
-            .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPaintPosition = position;');
+            .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;\nvarying float vPaintWorldZ;')
+            .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPaintPosition = position;\nvPaintWorldZ = (modelMatrix * vec4(position, 1.0)).z;');
           shader.fragmentShader = shader.fragmentShader
-            .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;')
+            .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;\nvarying float vPaintWorldZ;\nuniform float uFilmProgress;\nuniform float uApplyFilm;\nuniform vec3 uFilmColor;')
+            .replace('#include <color_fragment>', `#include <color_fragment>
+              float paintFilmFront = mix(-2.9, 2.9, uFilmProgress);
+              float filmCoverage = uApplyFilm * smoothstep(-0.06, 0.06, paintFilmFront - vPaintWorldZ);
+              diffuseColor.rgb = mix(diffuseColor.rgb, uFilmColor, filmCoverage);
+            `)
             .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+              roughnessFactor = mix(roughnessFactor, 0.18, filmCoverage);
               float paintGrain = fract(sin(dot(floor(vPaintPosition * 1800.0), vec3(12.9898,78.233,45.164))) * 43758.5453);
               roughnessFactor = clamp(roughnessFactor + (paintGrain - 0.5) * 0.018, 0.06, 1.0);
             `);
         };
-        paint.customProgramCacheKey = () => 'automotive-metallic-clearcoat-v1';
+        paint.customProgramCacheKey = () => 'automotive-film-transition-v2';
       } else if (name === 'glass') {
         object.castShadow = false;
         object.renderOrder = 2;
