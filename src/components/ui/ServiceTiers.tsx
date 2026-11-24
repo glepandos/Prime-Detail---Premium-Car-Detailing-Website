@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { ServiceTier } from '@/types';
 
 const SERVICE_TIERS: ServiceTier[] = [
@@ -151,6 +152,10 @@ const ServiceTierCard = ({ tier, isSelected, onSelect }: ServiceTierCardProps) =
       }`}
       onClick={onSelect}
     >
+      <div className="relative -mx-8 -mt-8 mb-8 h-48 overflow-hidden rounded-t-2xl md:-mx-10 md:-mt-10">
+        <Image src={`/images/editorial/${tier.id === 'essential' ? 'wash' : tier.id === 'correction' ? 'polishing' : 'beading'}.jpg`} alt={tier.id === 'essential' ? 'Foam wash on a sports car' : tier.id === 'correction' ? 'Machine polishing car paintwork' : 'Water droplets on protected paintwork'} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      </div>
       {/* Popular Badge */}
       {tier.popular && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">

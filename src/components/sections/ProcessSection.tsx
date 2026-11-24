@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { STAGES } from '@/components/three/DetailingScene';
+import Image from 'next/image';
 
 const PROCESS_STEPS = [
   {
@@ -11,6 +11,8 @@ const PROCESS_STEPS = [
     details: ['Iron X fallout remover', 'Fine-grade clay bar', 'Tar & adhesive remover', 'Final rinse & inspection'],
     duration: '60-90 min',
     icon: 'droplets',
+    image: '/images/editorial/wash.jpg',
+    imageAlt: 'Foam washing on the rear bumper of a red sports car',
   },
   {
     number: '02',
@@ -19,6 +21,8 @@ const PROCESS_STEPS = [
     details: ['Compound cut (heavy defects)', 'Polish refine (clarity)', 'Jeweling finish (depth)', 'IPA panel wipe'],
     duration: '3-6 hours',
     icon: 'rotate-cw',
+    image: '/images/editorial/polishing.jpg',
+    imageAlt: 'Machine polishing a white car hood',
   },
   {
     number: '03',
@@ -27,6 +31,8 @@ const PROCESS_STEPS = [
     details: ['Surface prep & inspection', 'Base layer application', 'Top coat (if applicable)', 'Cure time: 12-24 hours'],
     duration: '2-4 hours',
     icon: 'shield',
+    image: '/images/editorial/beading.jpg',
+    imageAlt: 'Water droplets on a red sports car body',
   },
   {
     number: '04',
@@ -35,6 +41,8 @@ const PROCESS_STEPS = [
     details: ['Wheel faces & barrels coated', 'Glass ceramic coating', 'Trim restoration', 'Interior deep clean', 'Final QC & walkthrough'],
     duration: '2-3 hours',
     icon: 'sparkles',
+    image: '/images/editorial/wheels.jpg',
+    imageAlt: 'Careful wheel cleaning and finishing',
   },
 ];
 
@@ -139,7 +147,7 @@ const ProcessStep = ({ step, index, isActive, onClick }: ProcessStepProps) => {
       }`}
       onClick={onClick}
     >
-      <div className={`flex lg:flex-row ${isEven ? 'lg:flex-row-reverse' : ''} items-start gap-8 md:gap-12`}>
+      <div className={`flex flex-col lg:flex-row ${isEven ? 'lg:flex-row-reverse' : ''} items-start gap-8 md:gap-12`}>
         {/* Content */}
         <div className={`flex-1 lg:w-1/2 relative z-10 ${isEven ? 'lg:pl-12' : 'lg:pr-12'} text-center lg:text-left`}>
           {/* Step Number */}
@@ -197,63 +205,20 @@ const ProcessStep = ({ step, index, isActive, onClick }: ProcessStepProps) => {
         </div>
 
         {/* Visual Card */}
-        <div className={`flex-1 lg:w-1/2 relative`}>
+        <div className={`w-full flex-1 lg:w-1/2 relative`}>
           <div
             className={`relative aspect-[4/3] rounded-2xl overflow-hidden transition-all duration-700 ${
               isActive
                 ? 'ring-2 ring-emerald-400/50 shadow-[0_0_60px_rgba(0,212,170,0.15)]'
-                : 'opacity-60 hover:opacity-80'
+                : 'opacity-90 hover:opacity-100'
             }`}
           >
-            {/* Stage color background */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(135deg, ${STAGES[index]?.bgColor || '#0a0a0a'} 0%, ${STAGES[index]?.color || '#00D4AA'}22 100%)`,
-              }}
-            />
-
-            {/* Decorative elements */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center p-8">
-                {ICONS[step.icon as keyof typeof ICONS] && (
-                  <div className="inline-block mb-4" style={{ transform: 'scale(2.5)' }}>
-                    {ICONS[step.icon as keyof typeof ICONS]}
-                  </div>
-                )}
-                <div className="text-white/10 font-light tracking-widest text-4xl md:text-5xl uppercase">
-                  {step.title}
-                </div>
-              </div>
+            <Image src={step.image} alt={step.imageAlt} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-700 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between text-white">
+              <span className="text-xs uppercase tracking-[0.2em]">{step.title}</span>
+              <span className="text-xs text-white/70">{step.duration}</span>
             </div>
-
-            {/* Progress ring for active */}
-            {isActive && (
-              <svg className="absolute inset-0 -m-2" viewBox="0 0 100 100">
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="url(#progressGradient)"
-                  strokeWidth="2"
-                  strokeDasharray="283"
-                  strokeDashoffset="0"
-                  strokeLinecap="round"
-                  className="animate-progress"
-                  style={{
-                    transform: 'rotate(-90deg)',
-                    transformOrigin: '50% 50%',
-                  }}
-                />
-                <defs>
-                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#00D4AA" />
-                    <stop offset="100%" stopColor="#0066FF" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            )}
           </div>
 
           {/* Stage indicator dot on timeline */}
