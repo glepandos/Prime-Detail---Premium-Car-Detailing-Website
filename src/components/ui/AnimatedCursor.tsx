@@ -11,7 +11,35 @@ export default function AnimatedCursor() {
     const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
     const root = document.documentElement;
     let visible = false;
+    let frame = 0;
+    let hovered = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const draw = () => {
+      if (!cursor.current) return;
+      cursor.current.dataset.frame = String(frame);
+      const sprite = cursor.current.querySelector<HTMLElement>('.studio-cursor-frames');
+      if (sprite) sprite.style.backgroundPositionY = `${-frame * 32}px`;
+    };
+    const step = () => {
+      timer = undefined;
+      const destination = hovered ? 10 : 0;
+      if (frame === destination) return;
+      frame += Math.sign(destination - frame);
+      draw();
+      if (frame !== destination) timer = setTimeout(step, 100);
+    };
+    const transition = (next: boolean) => {
+      if (next === hovered) return;
+      hovered = next;
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(step, 100);
+    };
     const hide = () => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = undefined;
+      hovered = false;
+      frame = 0;
+      draw();
       root.removeAttribute('data-studio-cursor');
       if (cursor.current) cursor.current.style.visibility = 'hidden';
       visible = false;
@@ -28,7 +56,7 @@ export default function AnimatedCursor() {
         hide(); return;
       }
       const hover = !!target.closest(interactive);
-      node.dataset.hover = String(hover);
+      transition(hover);
       node.style.transform = `translate3d(${event.clientX - 8}px, ${event.clientY - 5}px, 0)`;
       if (!visible) {
         root.setAttribute('data-studio-cursor', '');
@@ -36,7 +64,7 @@ export default function AnimatedCursor() {
         visible = true;
       }
     };
-    // Both images stay mounted so the browser preserves the original WebP timing.
+    // Original 100 ms frames play once, hold at either end, and reverse in place.
     const sync = (event: PointerEvent) => move(event);
     window.addEventListener('pointermove', move, { passive: true });
     window.addEventListener('pointerover', sync, { passive: true });
@@ -57,12 +85,10 @@ export default function AnimatedCursor() {
   }, []);
 
   return (
-    <div ref={cursor} className="studio-cursor" aria-hidden="true" data-hover="false">
-      {/* Native img preserves animated WebP frames without a JS animation loop. */}
+    <div ref={cursor} className="studio-cursor" aria-hidden="true" data-frame="0">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img className="studio-cursor-normal" src="/cursors/normal.webp" width="32" height="32" alt="" draggable="false" />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="studio-cursor-hover" src="/cursors/hover.webp" width="32" height="32" alt="" draggable="false" />
+      <span className="studio-cursor-frames" />
     </div>
   );
 }

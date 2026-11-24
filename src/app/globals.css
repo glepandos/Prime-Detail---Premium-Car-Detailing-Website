@@ -26,9 +26,16 @@
 }
 
 .studio-cursor img { position: absolute; inset: 0; }
-.studio-cursor-hover { opacity: 0; }
-.studio-cursor[data-hover='true'] .studio-cursor-hover { opacity: 1; }
-.studio-cursor[data-hover='true'] .studio-cursor-normal { opacity: 0; }
+.studio-cursor-frames {
+  position: absolute;
+  inset: 0;
+  background-image: url('/cursors/hover-frames.png');
+  background-size: 32px 352px;
+  background-repeat: no-repeat;
+  opacity: 0;
+}
+.studio-cursor:not([data-frame='0']) .studio-cursor-frames { opacity: 1; }
+.studio-cursor:not([data-frame='0']) .studio-cursor-normal { opacity: 0; }
 
 @media (hover: hover) and (pointer: fine) {
   html[data-studio-cursor], html[data-studio-cursor] body,
