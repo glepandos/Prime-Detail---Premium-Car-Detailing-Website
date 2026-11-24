@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, RoundedBox, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { EquipmentRack } from './EquipmentRack';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
 
 RectAreaLightUniformsLib.init();
@@ -15,6 +16,7 @@ export const STAGES = [
 ];
 
 function Car({ stage }: { stage: number }) {
+  const invalidate = useThree((state) => state.invalidate);
   const { scene } = useGLTF('/models/ferrari.glb', '/draco/');
   const filmProgress = useRef({ value: 0 });
   const filmElapsed = useRef(0);
@@ -148,6 +150,8 @@ function Car({ stage }: { stage: number }) {
     filmElapsed.current += Math.min(delta, 0.05);
     const t = Math.min(1, filmElapsed.current / 5.5);
     filmProgress.current.value = t * t * (3 - 2 * t);
+    if (t < 1) invalidate();
+    else model.children.forEach((child) => { if (child.userData.ownedGeometry) child.visible = false; });
   });
   useEffect(() => () => {
     const materials = new Set<THREE.Material>();
@@ -170,14 +174,14 @@ function Garage() {
         <meshStandardMaterial color="#181d23" roughness={0.68} metalness={0.08} />
       </mesh>
       {/* Rear wall and framed sectional garage door. */}
-      <RoundedBox args={[15, 6, 0.24]} position={[0, 3, 5.5]} radius={0.06}>
+      <RoundedBox args={[15, 6, 0.24]} position={[0, 3, 5.5]} radius={0.06} smoothness={1}>
         <meshStandardMaterial color="#657078" roughness={0.85} />
       </RoundedBox>
-      <RoundedBox args={[6.4, 3.7, 0.16]} position={[0, 1.85, 5.29]} radius={0.03}>
+      <RoundedBox args={[6.4, 3.7, 0.16]} position={[0, 1.85, 5.29]} radius={0.03} smoothness={1}>
         <meshStandardMaterial color="#080c11" metalness={0.6} roughness={0.5} />
       </RoundedBox>
       {Array.from({ length: 10 }, (_, i) => (
-        <RoundedBox key={i} args={[6.1, 0.3, 0.08]} position={[0, 0.22 + i * 0.35, 5.16]} radius={0.015}>
+        <RoundedBox key={i} args={[6.1, 0.3, 0.08]} position={[0, 0.22 + i * 0.35, 5.16]} radius={0.015} smoothness={1}>
           <meshStandardMaterial color={i % 2 ? '#566169' : '#4c575f'} metalness={0.5} roughness={0.45} />
         </RoundedBox>
       ))}
@@ -199,17 +203,7 @@ function Garage() {
           ))}
         </group>
       ))}
-      {/* Service cabinets and detailing equipment. */}
-      {[-5.6, 5.6].map((x) => (
-        <group key={x} position={[x, 0, 4.6]}>
-          <RoundedBox args={[1.65, 1.05, 0.65]} position={[0, 0.55, 0]} radius={0.04}>
-            <meshStandardMaterial color="#20262c" metalness={0.6} roughness={0.3} />
-          </RoundedBox>
-          <mesh position={[0, 1.1, 0]}><boxGeometry args={[1.8, 0.06, 0.8]} /><meshStandardMaterial color="#9ba4a9" metalness={0.9} roughness={0.3} /></mesh>
-          {[0.3, 0.55, 0.8].map((y) => <mesh key={y} position={[0, y, -0.34]}><boxGeometry args={[1.4, 0.025, 0.035]} /><meshStandardMaterial color="#89969b" metalness={0.7} /></mesh>)}
-          {[-0.45, 0, 0.45].map((bx, i) => <mesh key={bx} position={[bx, 1.28, 0]}><cylinderGeometry args={[0.06, 0.075, 0.3, 12]} /><meshStandardMaterial color={i === 1 ? '#65b9a5' : '#b8c5cd'} roughness={0.4} /></mesh>)}
-        </group>
-      ))}
+      <EquipmentRack />
       {[0, 1, 2].map((i) => (
         <mesh key={i} position={[0, 3.9, 2.5 - i * 2.5]} rotation={[Math.PI / 2, 0, 0]}>
           <planeGeometry args={[5.8, 0.16]} />
@@ -231,7 +225,7 @@ function Softbox({ position, intensity, width, height }: { position: [number, nu
 }
 
 function CameraFraming() {
-  const { camera, size } = useThree();
+  const { camera, size, invalidate } = useThree();
   const pointer = useRef({ x: 0, y: 0 });
   const base = useRef(new THREE.Vector3(3.75, 1.95, -5.65));
   useEffect(() => {
@@ -243,7 +237,7 @@ function CameraFraming() {
   }, [camera, size.width]);
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const reset = () => { pointer.current = { x: 0, y: 0 }; };
+    const reset = () => { pointer.current = { x: 0, y: 0 }; invalidate(); };
     reset();
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || reduced.matches || size.width < 700) { reset(); return; }
@@ -251,6 +245,7 @@ function CameraFraming() {
         x: THREE.MathUtils.clamp(event.clientX / window.innerWidth * 2 - 1, -1, 1),
         y: THREE.MathUtils.clamp(event.clientY / window.innerHeight * 2 - 1, -1, 1),
       };
+      invalidate();
     };
     window.addEventListener('pointermove', move);
     document.documentElement.addEventListener('pointerleave', reset);
@@ -262,30 +257,31 @@ function CameraFraming() {
       window.removeEventListener('blur', reset);
       reduced.removeEventListener('change', reset);
     };
-  }, [size.width]);
+  }, [size.width, invalidate]);
   useFrame((_, delta) => {
     camera.position.x = THREE.MathUtils.damp(camera.position.x, base.current.x + pointer.current.x * 0.5, 4, delta);
     camera.position.y = THREE.MathUtils.damp(camera.position.y, base.current.y - pointer.current.y * 0.2, 4, delta);
     camera.lookAt(0, 0.85, 0);
+    if (Math.abs(camera.position.x - base.current.x - pointer.current.x * 0.5) + Math.abs(camera.position.y - base.current.y + pointer.current.y * 0.2) > 0.001) invalidate();
   });
   return null;
 }
 
 export const DetailingScene = ({ currentStage = 2 }: { currentStage?: number; scrollProgress?: number; onStageChange?: (stage: number) => void }) => (
-  <Canvas shadows dpr={[1, 2]} camera={{ position: [3.75, 1.95, -5.65], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true, toneMappingExposure: 0.85 }} style={{ position: 'absolute', inset: 0 }}>
+  <Canvas frameloop="demand" dpr={[1, 1.5]} camera={{ position: [3.75, 1.95, -5.65], fov: 37, near: 0.1, far: 70 }} gl={{ antialias: true, toneMappingExposure: 0.78 }} style={{ position: 'absolute', inset: 0 }}>
     <color attach="background" args={['#11191f']} />
     <fog attach="fog" args={['#11191f', 19, 45]} />
     <CameraFraming />
-    <ambientLight intensity={0.2} />
-    <hemisphereLight args={['#d2e8ff', '#20252b', 0.7]} />
-    <Softbox position={[-2, 4.5, -3]} intensity={12} width={5} height={0.45} />
-    <Softbox position={[4, 3, 3]} intensity={8} width={3.5} height={0.65} />
+    <ambientLight intensity={0.18} />
+    <hemisphereLight args={['#d2e8ff', '#20252b', 0.6]} />
+    <Softbox position={[-2, 4.5, -3]} intensity={10} width={5} height={0.45} />
+    <Softbox position={[4, 3, 3]} intensity={6.8} width={3.5} height={0.65} />
     <Softbox position={[-4, 2.5, 0]} intensity={6} width={0.45} height={3} />
-    <Softbox position={[0, 4, -1]} intensity={9} width={5.8} height={0.65} />
-    <Softbox position={[0, 4, 2]} intensity={7} width={5.8} height={0.65} />
+    <Softbox position={[0, 4, -1]} intensity={7.5} width={5.8} height={0.65} />
+    <Softbox position={[0, 4, 2]} intensity={6} width={5.8} height={0.65} />
     <Garage />
     <Suspense fallback={null}>
-      <Environment resolution={512} frames={1}>
+      <Environment resolution={256} frames={1}>
         <Lightformer intensity={2} position={[0, 4, -6]} rotation={[Math.PI / 6, 0, 0]} scale={[5, 1.4, 1]} />
         <Lightformer intensity={3} position={[4, 2.5, 3]} rotation={[0, -Math.PI / 2, 0]} scale={[1.2, 3, 1]} />
         <Lightformer intensity={3.2} position={[0, 6, -2]} rotation={[Math.PI / 2, 0, 0]} scale={[7, 0.45, 1]} />
