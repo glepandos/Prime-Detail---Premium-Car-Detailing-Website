@@ -12,7 +12,7 @@ interface Props {
 export const HorizontalScroll = ({ children, currentStage = 2, setCurrentStage, onStageChange }: Props) => (
   <section id="hero" className="relative w-full overflow-hidden bg-[#11191f]" style={{ height: 'min(920px, 100svh)', minHeight: 600 }}>
     {children}
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black/80 to-transparent" />
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-black to-transparent" />
     <div className="pointer-events-none absolute left-6 bottom-32 z-10 max-w-xs md:left-12 md:bottom-12">
       <p className="mb-3 text-[10px] uppercase tracking-[0.3em] text-emerald-300">The detailing studio</p>
       <h1 className="text-3xl font-light tracking-tight text-white md:text-4xl">{STAGES[currentStage].name}</h1>

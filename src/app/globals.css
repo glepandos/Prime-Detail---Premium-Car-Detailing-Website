@@ -95,6 +95,10 @@
     background-color: #17191b;
   }
 
+  #services.material-background {
+    background-image: linear-gradient(to bottom, #000 0, #060708 64px, #101214 176px, #17191b 300px);
+  }
+
   .container-custom {
     @apply max-w-7xl mx-auto px-6;
   }
