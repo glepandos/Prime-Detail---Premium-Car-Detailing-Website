@@ -5,12 +5,39 @@
 @media (hover: hover) and (pointer: fine) {
   html, body, canvas, a, button, summary, label[for], select,
   [role='button'], [role='link'], input[type='checkbox'], input[type='radio'], .cursor-pointer {
-    cursor: url('/cursors/studio-pointer.svg') 8 9, auto;
+    cursor: url('/cursors/normal.webp') 8 5, auto;
   }
 
   input:disabled, button:disabled, [aria-disabled='true'] {
     cursor: not-allowed;
   }
+}
+
+.studio-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 32px;
+  height: 32px;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 2147483647;
+  will-change: transform;
+}
+
+.studio-cursor img { position: absolute; inset: 0; }
+.studio-cursor-hover { opacity: 0; }
+.studio-cursor[data-hover='true'] .studio-cursor-hover { opacity: 1; }
+.studio-cursor[data-hover='true'] .studio-cursor-normal { opacity: 0; }
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-studio-cursor], html[data-studio-cursor] body,
+  html[data-studio-cursor] canvas, html[data-studio-cursor] a,
+  html[data-studio-cursor] button, html[data-studio-cursor] summary,
+  html[data-studio-cursor] label[for], html[data-studio-cursor] select,
+  html[data-studio-cursor] [role='button'], html[data-studio-cursor] [role='link'],
+  html[data-studio-cursor] input[type='checkbox'], html[data-studio-cursor] input[type='radio'],
+  html[data-studio-cursor] .cursor-pointer { cursor: none; }
 }
 
 @layer base {
